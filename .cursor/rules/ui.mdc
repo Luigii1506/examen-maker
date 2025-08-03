@@ -1,0 +1,373 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# Estándares de Diseño UI - Cursor Project Rules
+
+## Stack Tecnológico Base
+
+### Framework Principal
+
+- **Next.js 13.5.1** con App Directory
+- **React 18.2.0** con TypeScript 5.2.2
+- **Tailwind CSS 3.3.3** para estilos
+
+### Sistema de Componentes
+
+- **shadcn/ui** como base de componentes
+- **Radix UI** primitivos para accesibilidad
+- **Lucide React** para iconografía
+
+### Herramientas de Desarrollo
+
+- **class-variance-authority (CVA)** para variantes de componentes
+- **clsx + tailwind-merge** para manejo de clases CSS
+- **next-themes** para soporte de tema oscuro
+
+## Configuración de Tailwind CSS
+
+### Variables de Diseño
+
+```css
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 3.9%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 0 0% 3.9%;
+  --radius: 0.5rem;
+}
+```
+
+### Sistema de Colores
+
+- Usar **HSL** con variables CSS para todos los colores
+- Soporte obligatorio para **modo oscuro**
+- Colores semánticos: `primary`, `secondary`, `muted`, `accent`, `destructive`
+- Variables para charts: `--chart-1` a `--chart-5`
+
+### Border Radius
+
+```css
+borderRadius: {
+  lg: 'var(--radius)',
+  md: 'calc(var(--radius) - 2px)',
+  sm: 'calc(var(--radius) - 4px)',
+}
+```
+
+## Estructura de Archivos
+
+### Organización de Componentes
+
+```
+/components/
+  /ui/           # Componentes base (shadcn/ui)
+    - button.tsx
+    - card.tsx
+    - input.tsx
+    - dialog.tsx
+    ...
+/lib/
+  - utils.ts     # Utilidad cn() y helpers
+/hooks/
+  - use-toast.ts # Hooks personalizados
+/app/            # Páginas y layouts (App Directory)
+```
+
+### Alias de Importación
+
+```json
+{
+  "components": "@/components",
+  "utils": "@/lib/utils",
+  "ui": "@/components/ui",
+  "lib": "@/lib",
+  "hooks": "@/hooks"
+}
+```
+
+## Patrones de Componentes
+
+### 1. Función cn() Obligatoria
+
+```typescript
+import { cn } from "@/lib/utils";
+
+// Usar siempre cn() para combinar clases
+className={cn("base-classes", conditionalClasses, className)}
+```
+
+### 2. Pattern forwardRef + asChild
+
+```typescript
+const Component = React.forwardRef<HTMLElement, ComponentProps>(
+  ({ className, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp className={cn("base-styles", className)} ref={ref} {...props} />
+    );
+  }
+);
+Component.displayName = "Component";
+```
+
+### 3. Sistema de Variantes con CVA
+
+```typescript
+import { cva, type VariantProps } from "class-variance-authority";
+
+const componentVariants = cva(
+  "base-classes", // Clases base
+  {
+    variants: {
+      variant: {
+        default: "variant-specific-classes",
+        secondary: "other-variant-classes",
+      },
+      size: {
+        default: "size-classes",
+        sm: "small-size-classes",
+        lg: "large-size-classes",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+```
+
+### 4. Tipografía Estándar
+
+- **Font**: Inter (Google Fonts)
+- **Jerarquía de texto**:
+  - `text-2xl font-bold` para títulos principales
+  - `text-lg font-semibold` para subtítulos
+  - `text-sm text-muted-foreground` para texto secundario
+  - `text-xs` para labels y texto pequeño
+
+## Componentes Base Requeridos
+
+### Button
+
+- **Variantes**: `default`, `destructive`, `outline`, `secondary`, `ghost`, `link`
+- **Tamaños**: `default`, `sm`, `lg`, `icon`
+- **Estados**: hover, focus-visible, disabled
+
+### Card
+
+- **Estructura**: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`
+- **Estilos base**: `rounded-lg border bg-card text-card-foreground shadow-sm`
+
+### Input
+
+- **Base**: `flex h-10 w-full rounded-md border border-input bg-background`
+- **Estados**: focus-visible con ring, disabled con opacity
+
+### Dialog/Modal
+
+- **Overlay**: `fixed inset-0 z-50 bg-black/80`
+- **Content**: Centrado con animaciones de entrada/salida
+- **Close button**: Botón X en esquina superior derecha
+
+## Reglas de Diseño Visual
+
+### 1. Espaciado Consistente
+
+- Usar múltiplos de 4px: `space-y-4`, `p-6`, `gap-4`
+- Padding estándar para cards: `p-6`
+- Contenido de cards: `p-6 pt-0`
+
+### 2. Jerarquía Visual
+
+- Headers con `bg-white shadow-sm border-b`
+- Fondo de página: `min-h-screen bg-gray-50` o gradientes
+- Cards con `shadow-sm` o `shadow-2xl` para modales
+
+### 3. Estados y Feedback
+
+- **Loading**: Usar estado disabled y texto descriptivo
+- **Errores**: Alert destructive con icono
+- **Éxito**: Badge verde o Alert exitoso
+- **Información**: Alert default con icono informativo
+
+### 4. Colores de Brand
+
+- **Primario**: Azul oscuro (`bg-blue-900`, `hover:bg-blue-800`)
+- **Texto**: Variables de foreground
+- **Bordes**: Variables de border
+- **Backgrounds**: Variables de background
+
+## Animaciones y Transiciones
+
+### Animaciones Personalizadas
+
+```css
+keyframes: {
+  'accordion-down': {
+    from: { height: '0' },
+    to: { height: 'var(--radix-accordion-content-height)' },
+  },
+  'accordion-up': {
+    from: { height: 'var(--radix-accordion-content-height)' },
+    to: { height: '0' },
+  },
+}
+```
+
+### Transiciones Estándar
+
+- `transition-colors` para hover states
+- `duration-200` para animaciones rápidas
+- Usar `data-[state]` attributes para animaciones de Radix
+
+## Iconografía
+
+### Estándares de Iconos
+
+- **Biblioteca**: Lucide React únicamente
+- **Tamaño estándar**: `h-4 w-4` para iconos en texto
+- **Tamaño grande**: `h-6 w-6` para iconos destacados
+- **Posicionamiento**: Usar `mr-2` o `ml-2` para spacing con texto
+
+### Iconos Comunes
+
+- `Shield`: Seguridad/Certificación
+- `Users`: Usuarios/Equipos
+- `FileText`: Documentos
+- `BarChart3`: Reportes/Estadísticas
+- `CheckCircle`: Éxito/Completado
+- `XCircle`: Error/Fallido
+- `Clock`: Tiempo/Pendiente
+
+## Accesibilidad
+
+### Requisitos Obligatorios
+
+- Usar `forwardRef` en todos los componentes
+- Labels apropiados con `htmlFor`
+- Estados focus-visible con ring
+- Screen reader text con `sr-only`
+- Roles ARIA cuando sea necesario
+
+## Responsividad
+
+### Breakpoints Estándar
+
+- Mobile-first approach
+- `sm:` para tablet
+- `lg:` para desktop
+- Grid responsive: `grid-cols-1 lg:grid-cols-3`
+
+### Patrones Responsive
+
+- Headers que colapsan en mobile
+- Grids que se vuelven columna única
+- Padding reducido en mobile: `px-4 sm:px-6 lg:px-8`
+
+## Reglas de Implementación
+
+### 1. Imports Obligatorios
+
+```typescript
+"use client"; // Solo si necesario
+import * as React from "react";
+import { cn } from "@/lib/utils";
+```
+
+### 2. Props Interface
+
+```typescript
+export interface ComponentProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof componentVariants> {
+  asChild?: boolean;
+}
+```
+
+### 3. Exportación de Componentes
+
+```typescript
+export { Component, componentVariants };
+```
+
+### 4. DisplayName Obligatorio
+
+```typescript
+Component.displayName = "Component";
+```
+
+## Estado y Datos
+
+### Patrones de Estado
+
+- `useState` para estado local
+- Props drilling mínimo
+- Estados de loading explícitos
+- Manejo de errores con Alert components
+
+### Tipos de Datos
+
+```typescript
+interface User {
+  name: string;
+  email: string;
+  company: string;
+  position: string;
+}
+
+interface ExamStatus {
+  available: boolean;
+  completed: boolean;
+  score: number | null;
+  attempts: number;
+  maxAttempts: number;
+}
+```
+
+## Validación de Cumplimiento
+
+### Checklist de Componente
+
+- [ ] Usa forwardRef
+- [ ] Implementa asChild pattern si aplica
+- [ ] Tiene variantes con CVA
+- [ ] Usa cn() para clases
+- [ ] Exporta variants
+- [ ] Tiene displayName
+- [ ] Es responsive
+- [ ] Soporta modo oscuro
+- [ ] Maneja estados (hover, focus, disabled)
+
+### Checklist de Página
+
+- [ ] Usa layout responsivo
+- [ ] Implementa loading states
+- [ ] Maneja errores apropiadamente
+- [ ] Usa iconos de Lucide
+- [ ] Sigue jerarquía de colores
+- [ ] Implementa navegación clara
+- [ ] Usa espaciado consistente
+      description:
+      globs:
+      alwaysApply: false
+
+---
