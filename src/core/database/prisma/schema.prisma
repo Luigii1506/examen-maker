@@ -1,0 +1,25 @@
+// 🏗️ NEXTJS ENTERPRISE BOILERPLATE - SCHEMA MODULAR
+// ================================================
+// Archivo principal: Solo configuración (generator + datasource)
+// Los modelos están organizados en archivos separados en ./models/
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 📁 MODELOS ORGANIZADOS EN ARCHIVOS SEPARADOS:
+// ============================================
+// 
+// 🔐 ./models/auth.prisma        - User, Session, Account, Verification
+// 📁 ./models/file-upload.prisma - Upload, File (próximamente)
+// 💳 ./models/stripe.prisma      - Payment, Subscription (próximamente)  
+// 📦 ./models/inventory.prisma   - Product, Category (próximamente)
+// 🛒 ./models/ecommerce.prisma   - Order, Cart (próximamente)
+//
+// Prisma automáticamente combina todos los archivos .prisma en este directorio

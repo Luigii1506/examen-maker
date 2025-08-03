@@ -1,0 +1,57 @@
+// 📁 FILE UPLOAD MODULE
+// ===================
+// Modelos para manejo de archivos y uploads
+// ACTIVABLE: Se incluye solo si MODULE_FILE_UPLOAD=true
+
+model Upload {
+  id            String   @id @default(cuid())
+  
+  // 📂 File Info
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  
+  // 🔗 Storage Info
+  provider      String   // "local" | "s3" | "cloudinary"
+  url           String
+  key           String?  // S3 key or storage identifier
+  bucket        String?  // S3 bucket name
+  
+  // 👤 Relations
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 📝 Metadata
+  metadata      Json?    // Additional file metadata
+  isPublic      Boolean  @default(false)
+  tags          String[] // Array of tags for organization
+  
+  // ⏰ Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // 🗑️ Soft Delete
+  deletedAt     DateTime?
+  
+  @@map("uploads")
+  @@index([userId])
+  @@index([provider])
+  @@index([mimeType])
+  @@index([createdAt])
+}
+
+model FileCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?  // Icon identifier
+  maxSize     Int?     // Max file size in bytes
+  allowedTypes String[] // Allowed MIME types
+  
+  // ⏰ Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("file_categories")
+} 
