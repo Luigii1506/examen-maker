@@ -1,0 +1,220 @@
+// ===========================================
+// EXAM SYSTEM MODELS
+// ===========================================
+// Models for managing exams, questions, and answers
+
+model Exam {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  duration    Int      // Duration in minutes
+  category    String
+  difficulty  ExamDifficulty
+  totalQuestions Int
+  passingScore   Int    // Minimum score to pass (percentage)
+  status      ExamStatus @default(DRAFT)
+  
+  // Relationships
+  questions   Question[]
+  attempts    ExamAttempt[]
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  // User ID who created the exam
+  
+  @@map("exams")
+}
+
+model Question {
+  id           String      @id @default(cuid())
+  examId       String?     // Optional - questions can exist without being assigned to an exam
+  text         String      @db.Text
+  type         QuestionType
+  cognitiveType CognitiveType
+  category     String
+  difficulty   QuestionDifficulty
+  points       Int         @default(1)
+  order        Int?        // Order within the exam
+  status       QuestionStatus @default(ACTIVE)
+  
+  // Question-specific data
+  scenario     String?     @db.Text  // Optional scenario/context
+  explanation  String?     @db.Text  // Explanation for the correct answer
+  
+  // JSON fields for flexible question data
+  correctAnswer Json       // Stores correct answer(s) - flexible for different types
+  metadata     Json?       // Additional metadata (time limits, hints, etc.)
+  
+  // For matching questions
+  leftColumn   Json?       // Array of left column items for matching questions
+  rightColumn  Json?       // Array of right column items for matching questions
+  correctMatches Json?     // Object mapping correct matches for matching questions
+  
+  // Relationships
+  exam         Exam?       @relation(fields: [examId], references: [id], onDelete: SetNull)
+  options      QuestionOption[]
+  attempts     QuestionAttempt[]
+  
+  // Metadata
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  createdBy    String?     // User ID who created the question
+  
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String   @db.Text
+  isCorrect  Boolean  @default(false)
+  order      Int      // Order of the option
+  metadata   Json?    // Additional metadata
+  
+  // Relationships
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@map("question_options")
+}
+
+model ExamAttempt {
+  id          String           @id @default(cuid())
+  examId      String
+  userId      String
+  status      AttemptStatus    @default(IN_PROGRESS)
+  
+  // Timing
+  startedAt   DateTime         @default(now())
+  finishedAt  DateTime?
+  timeElapsed Int?             // Time elapsed in seconds
+  
+  // Scoring
+  totalScore    Int            @default(0)
+  earnedScore   Int            @default(0)
+  percentage    Float          @default(0)
+  passed        Boolean        @default(false)
+  
+  // Relationships
+  exam        Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers     QuestionAttempt[]
+  
+  // Metadata
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  @@map("exam_attempts")
+}
+
+model QuestionAttempt {
+  id              String      @id @default(cuid())
+  examAttemptId   String
+  questionId      String
+  selectedAnswer  Json        // Flexible storage for different answer types
+  isCorrect       Boolean     @default(false)
+  pointsEarned    Int         @default(0)
+  timeSpent       Int?        // Time spent on this question in seconds
+  
+  // Relationships
+  examAttempt     ExamAttempt @relation(fields: [examAttemptId], references: [id], onDelete: Cascade)
+  question        Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([examAttemptId, questionId])
+  @@map("question_attempts")
+}
+
+model Certificate {
+  id              String           @id @default(cuid())
+  userId          String
+  examAttemptId   String           @unique
+  certificateNumber String         @unique
+  
+  // Certificate details
+  candidateName   String
+  candidateEmail  String
+  examTitle       String
+  score           Int
+  issuedDate      DateTime         @default(now())
+  expiryDate      DateTime
+  status          CertificateStatus @default(ACTIVE)
+  
+  // Download tracking
+  downloadCount   Int              @default(0)
+  lastDownloaded  DateTime?
+  
+  // Metadata
+  metadata        Json?            // Additional certificate data
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@map("certificates")
+}
+
+// ===========================================
+// ENUMS
+// ===========================================
+
+enum ExamDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ExamStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  MATCHING
+  SHORT_ANSWER
+  ESSAY
+}
+
+enum CognitiveType {
+  REMEMBER
+  UNDERSTAND
+  APPLY
+  ANALYZE
+  EVALUATE
+  CREATE
+}
+
+enum QuestionDifficulty {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum QuestionStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+  UNDER_REVIEW
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  SUSPENDED
+}
+
+enum CertificateStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  SUSPENDED
+} 

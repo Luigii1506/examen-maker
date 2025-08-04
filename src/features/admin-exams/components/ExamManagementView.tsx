@@ -481,7 +481,12 @@ export default function ExamManagementView() {
 
       {/* Create Exam Dialog Placeholder */}
       {showCreateDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          }}
+        >
           <Card className="w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Create New Exam</h3>

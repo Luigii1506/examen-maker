@@ -103,10 +103,10 @@ export default function UserDashboardPage() {
   }
 
   // Redirect admins to admin dashboard
-  if (isAdmin) {
-    router.replace("/dashboard");
-    return null;
-  }
+  // if (isAdmin) {
+  //   router.replace("/dashboard");
+  //   return null;
+  // }
 
   // Only show if user is authenticated
   if (!isAuthenticated || !user) {

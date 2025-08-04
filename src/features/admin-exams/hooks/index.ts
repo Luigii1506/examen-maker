@@ -1,2 +1,2 @@
 // Hooks for exam administration
-export {};
+export * from "./useQuestions";

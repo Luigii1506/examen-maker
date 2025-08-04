@@ -1,5 +1,8 @@
 // Types and interfaces for the exam administration system
 
+// Export new question management types
+export * from "./question";
+
 export interface AdminExam extends Exam {
   creatorId: string;
   statistics: ExamStatistics;

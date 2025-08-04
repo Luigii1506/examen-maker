@@ -332,10 +332,10 @@ export default function ExamPage() {
   }
 
   // Redirect admins to admin dashboard
-  if (isAdmin) {
-    router.replace("/dashboard");
-    return null;
-  }
+  //   if (isAdmin) {
+  //     router.replace("/dashboard");
+  //     return null;
+  //   }
 
   // Only show if user is authenticated
   if (!isAuthenticated || !user) {
@@ -608,7 +608,12 @@ export default function ExamPage() {
 
       {/* Confirm Dialog */}
       {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+          }}
+        >
           <Card className="w-96 mx-4">
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">
