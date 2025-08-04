@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Badge } from "@/core/components";
+import { Button, Card, Badge, Modal } from "@/core/components";
 import {
   Plus,
   Edit,
@@ -16,110 +16,85 @@ import {
   XCircle,
   AlertCircle,
   BarChart3,
+  X,
+  FileText,
+  Target,
 } from "lucide-react";
-
-// Mock data - later this will come from our admin-exams features
-const mockExams = [
-  {
-    id: 1,
-    title: "AML Certification Exam 2024 - Basic",
-    description:
-      "Basic level certification exam for Anti-Money Laundering compliance",
-    category: "Basic Certification",
-    duration: 120, // minutes
-    totalQuestions: 50,
-    passingScore: 70,
-    status: "Active",
-    attempts: 145,
-    passRate: 68,
-    averageScore: 72.5,
-    createdAt: "2024-01-15",
-    lastAttempt: "2024-01-20",
-  },
-  {
-    id: 2,
-    title: "AML Certification Exam 2024 - Intermediate",
-    description:
-      "Intermediate level certification exam for AML compliance officers",
-    category: "Intermediate Certification",
-    duration: 150,
-    totalQuestions: 75,
-    passingScore: 75,
-    status: "Active",
-    attempts: 89,
-    passRate: 55,
-    averageScore: 68.2,
-    createdAt: "2024-01-16",
-    lastAttempt: "2024-01-19",
-  },
-  {
-    id: 3,
-    title: "AML Certification Exam 2024 - Advanced",
-    description:
-      "Advanced level certification exam for senior compliance officers",
-    category: "Advanced Certification",
-    duration: 180,
-    totalQuestions: 100,
-    passingScore: 80,
-    status: "Draft",
-    attempts: 12,
-    passRate: 42,
-    averageScore: 62.8,
-    createdAt: "2024-01-18",
-    lastAttempt: "2024-01-18",
-  },
-];
-
-const mockResults = [
-  {
-    id: 1,
-    candidateName: "Juan Carlos Pérez",
-    candidateEmail: "juan.perez@banco.com",
-    examTitle: "AML Certification Exam 2024 - Basic",
-    score: 85,
-    passed: true,
-    duration: 95, // minutes taken
-    completedAt: "2024-01-20T10:30:00Z",
-    attempts: 1,
-  },
-  {
-    id: 2,
-    candidateName: "María García López",
-    candidateEmail: "maria.garcia@financiera.com",
-    examTitle: "AML Certification Exam 2024 - Intermediate",
-    score: 72,
-    passed: false,
-    duration: 142,
-    completedAt: "2024-01-19T14:15:00Z",
-    attempts: 2,
-  },
-  {
-    id: 3,
-    candidateName: "Carlos Rodriguez",
-    candidateEmail: "carlos.rodriguez@credit.com",
-    examTitle: "AML Certification Exam 2024 - Basic",
-    score: 92,
-    passed: true,
-    duration: 87,
-    completedAt: "2024-01-19T16:45:00Z",
-    attempts: 1,
-  },
-];
+import { useExams } from "../hooks";
+import { ExamForm } from "./";
+import {
+  Exam,
+  CreateExamInput,
+  UpdateExamInput,
+  EXAM_DIFFICULTY_LABELS,
+  EXAM_STATUS_LABELS,
+} from "../types/exam";
 
 export default function ExamManagementView() {
+  const {
+    exams,
+    loading,
+    error,
+    stats,
+    pagination,
+    filters,
+    updateFilters,
+    createExam,
+    updateExam,
+    deleteExam,
+    getExam,
+  } = useExams();
+
   const [activeTab, setActiveTab] = useState("exams");
-  const [exams] = useState(mockExams);
-  const [results] = useState(mockResults);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [viewingExam, setViewingExam] = useState<Exam | null>(null);
+
+  // Handlers
+  const handleCreateExam = async (data: CreateExamInput) => {
+    try {
+      await createExam(data);
+      setShowCreateDialog(false);
+    } catch (error) {
+      console.error("Failed to create exam:", error);
+    }
+  };
+
+  const handleEditExam = async (data: UpdateExamInput) => {
+    if (!editingExam) return;
+    try {
+      await updateExam(editingExam.id, data);
+      setShowEditDialog(false);
+      setEditingExam(null);
+    } catch (error) {
+      console.error("Failed to update exam:", error);
+    }
+  };
+
+  const handleDeleteExam = async (examId: string) => {
+    if (window.confirm("Are you sure you want to delete this exam?")) {
+      try {
+        await deleteExam(examId);
+      } catch (error) {
+        console.error("Failed to delete exam:", error);
+      }
+    }
+  };
+
+  const openEditDialog = (exam: Exam) => {
+    setEditingExam(exam);
+    setShowEditDialog(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Active":
+      case "ACTIVE":
         return "success";
-      case "Draft":
+      case "DRAFT":
         return "warning";
-      case "Archived":
+      case "ARCHIVED":
         return "default";
       default:
         return "default";
@@ -128,29 +103,22 @@ export default function ExamManagementView() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "Active":
+      case "ACTIVE":
         return <CheckCircle className="h-4 w-4" />;
-      case "Draft":
+      case "DRAFT":
         return <AlertCircle className="h-4 w-4" />;
-      case "Archived":
+      case "ARCHIVED":
         return <XCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
     }
   };
 
-  const filteredExams = exams.filter(
-    (exam) =>
-      exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exam.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredResults = results.filter(
-    (result) =>
-      result.candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.candidateEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.examTitle.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Apply search filter
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    updateFilters({ search: value, page: 1 });
+  };
 
   return (
     <div className="space-y-6">
@@ -177,7 +145,7 @@ export default function ExamManagementView() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Exams</p>
-              <p className="text-2xl font-bold text-gray-900">{exams.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <BookOpen className="h-8 w-8 text-blue-600" />
           </div>
@@ -188,7 +156,7 @@ export default function ExamManagementView() {
             <div>
               <p className="text-sm text-gray-600">Active Exams</p>
               <p className="text-2xl font-bold text-green-600">
-                {exams.filter((e) => e.status === "Active").length}
+                {stats.active}
               </p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600" />
@@ -200,7 +168,7 @@ export default function ExamManagementView() {
             <div>
               <p className="text-sm text-gray-600">Total Attempts</p>
               <p className="text-2xl font-bold text-purple-600">
-                {exams.reduce((acc, exam) => acc + exam.attempts, 0)}
+                {stats.totalAttempts}
               </p>
             </div>
             <Users className="h-8 w-8 text-purple-600" />
@@ -212,42 +180,12 @@ export default function ExamManagementView() {
             <div>
               <p className="text-sm text-gray-600">Avg Pass Rate</p>
               <p className="text-2xl font-bold text-orange-600">
-                {Math.round(
-                  exams.reduce((acc, exam) => acc + exam.passRate, 0) /
-                    exams.length
-                )}
-                %
+                {stats.averagePassRate}%
               </p>
             </div>
             <BarChart3 className="h-8 w-8 text-orange-600" />
           </div>
         </Card>
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab("exams")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "exams"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            Exams
-          </button>
-          <button
-            onClick={() => setActiveTab("results")}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "results"
-                ? "border-blue-500 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            Results
-          </button>
-        </nav>
       </div>
 
       {/* Search */}
@@ -256,11 +194,9 @@ export default function ExamManagementView() {
           <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder={
-              activeTab === "exams" ? "Search exams..." : "Search results..."
-            }
+            placeholder="Search exams..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -300,7 +236,7 @@ export default function ExamManagementView() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredExams.map((exam) => (
+                {exams.map((exam) => (
                   <tr key={exam.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="max-w-xs">
@@ -335,14 +271,14 @@ export default function ExamManagementView() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`text-sm font-medium ${
-                          exam.passRate >= 70
+                          (exam.passRate || 0) >= 70
                             ? "text-green-600"
-                            : exam.passRate >= 50
+                            : (exam.passRate || 0) >= 50
                             ? "text-yellow-600"
                             : "text-red-600"
                         }`}
                       >
-                        {exam.passRate}%
+                        {exam.passRate || 0}%
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -353,16 +289,28 @@ export default function ExamManagementView() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingExam(exam)}
+                          title="View Details"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(exam)}
+                          title="Edit Exam"
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <BarChart3 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExam(exam.id)}
+                          title="Delete Exam"
+                        >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
@@ -375,138 +323,268 @@ export default function ExamManagementView() {
         </Card>
       )}
 
-      {/* Results Tab */}
-      {activeTab === "results" && (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Candidate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Exam
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Score
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Result
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Attempts
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Completed
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredResults.map((result) => (
-                  <tr key={result.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {result.candidateName}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {result.candidateEmail}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900">
-                        {result.examTitle}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">
-                        {result.score}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={result.passed ? "success" : "error"}>
-                        {result.passed ? (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="ml-1">Passed</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-4 w-4" />
-                            <span className="ml-1">Failed</span>
-                          </>
-                        )}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">
-                        {result.duration}min
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">
-                        {result.attempts}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900">
-                        {new Date(result.completedAt).toLocaleDateString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      {/* Modals */}
+      {showCreateDialog && (
+        <ExamForm
+          onSave={
+            handleCreateExam as (
+              data: CreateExamInput | UpdateExamInput
+            ) => Promise<void>
+          }
+          onCancel={() => setShowCreateDialog(false)}
+          isLoading={loading}
+        />
       )}
 
-      {/* Create Exam Dialog Placeholder */}
-      {showCreateDialog && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+      {showEditDialog && editingExam && (
+        <ExamForm
+          exam={editingExam}
+          onSave={
+            handleEditExam as (
+              data: CreateExamInput | UpdateExamInput
+            ) => Promise<void>
+          }
+          onCancel={() => {
+            setShowEditDialog(false);
+            setEditingExam(null);
           }}
+          isLoading={loading}
+        />
+      )}
+
+      {/* Exam Details Modal */}
+      {viewingExam && (
+        <Modal
+          isOpen={true}
+          onClose={() => setViewingExam(null)}
+          title="Exam Details"
+          description="View comprehensive exam information and statistics"
+          size="xl"
+          className="bg-gradient-to-br from-white to-gray-50/50"
         >
-          <Card className="w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Create New Exam</h3>
-              <p className="text-gray-600 mb-4">
-                Exam creation form will be implemented here.
-              </p>
-              <div className="flex justify-end space-x-3">
+          <div className="p-6">
+            {/* Exam Overview */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Exam Information
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Title
+                    </label>
+                    <p className="text-gray-900 font-semibold text-lg">
+                      {viewingExam.title}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Category
+                    </label>
+                    <p className="text-gray-900 font-medium">
+                      {viewingExam.category}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Difficulty Level
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          viewingExam.difficulty === "BASIC"
+                            ? "bg-green-500"
+                            : viewingExam.difficulty === "INTERMEDIATE"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                      <span className="text-gray-900 font-medium">
+                        {EXAM_DIFFICULTY_LABELS[viewingExam.difficulty]}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Status
+                    </label>
+                    <Badge
+                      variant={getStatusColor(viewingExam.status)}
+                      className="text-sm"
+                    >
+                      {getStatusIcon(viewingExam.status)}
+                      <span className="ml-2">
+                        {EXAM_STATUS_LABELS[viewingExam.status]}
+                      </span>
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Duration
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {viewingExam.duration} minutes
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Total Questions
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {viewingExam.totalQuestions} questions
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Passing Score
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {viewingExam.passingScore}% required
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <label className="text-sm font-medium text-gray-600 mb-1 block">
+                      Total Attempts
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-900 font-medium">
+                        {viewingExam.attempts || 0} attempts
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {viewingExam.description && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <label className="text-sm font-medium text-gray-600 mb-2 block">
+                    Description
+                  </label>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-gray-900 leading-relaxed">
+                      {viewingExam.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Statistics Section */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-4 w-4 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Performance Statistics
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
+                  <div className="text-2xl font-bold text-blue-800 mb-1">
+                    {viewingExam.attempts || 0}
+                  </div>
+                  <div className="text-blue-600 text-sm font-medium">
+                    Total Attempts
+                  </div>
+                </div>
+
+                <div className="bg-green-50 rounded-xl p-4 text-center border border-green-200">
+                  <div className="text-2xl font-bold text-green-800 mb-1">
+                    {viewingExam.passRate || 0}%
+                  </div>
+                  <div className="text-green-600 text-sm font-medium">
+                    Pass Rate
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-200">
+                  <div className="text-2xl font-bold text-amber-800 mb-1">
+                    {viewingExam.averageScore || 0}%
+                  </div>
+                  <div className="text-amber-600 text-sm font-medium">
+                    Average Score
+                  </div>
+                </div>
+              </div>
+
+              {(viewingExam.attempts || 0) === 0 && (
+                <div className="mt-6 text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">
+                    No attempts recorded yet
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    Statistics will appear once candidates start taking this
+                    exam
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t border-gray-200 mt-6">
+              <div className="text-center px-4">
+                <p className="text-sm text-gray-600">
+                  Created:{" "}
+                  {new Date(viewingExam.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Last Updated:{" "}
+                  {new Date(viewingExam.updatedAt).toLocaleDateString()}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => setShowCreateDialog(false)}
+                  onClick={() => {
+                    setViewingExam(null);
+                    openEditDialog(viewingExam);
+                  }}
+                  className="bg-white hover:bg-gray-50"
                 >
-                  Cancel
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Exam
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Create Exam
+
+                <Button
+                  onClick={() => setViewingExam(null)}
+                  className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white"
+                >
+                  Close
                 </Button>
               </div>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
