@@ -179,8 +179,6 @@ enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
   MATCHING
-  SHORT_ANSWER
-  ESSAY
 }
 
 enum CognitiveType {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Badge } from "@/core/components";
+import { Button, Card, Badge, Modal } from "@/core/components";
 import {
   Plus,
   Edit,
@@ -511,198 +511,332 @@ export default function QuestionBankView() {
 
       {/* View Question Dialog */}
       {(viewingQuestion || viewingQuestionLoading) && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+        <Modal
+          isOpen={true}
+          onClose={() => {
+            setViewingQuestion(null);
+            setViewingQuestionLoading(false);
           }}
+          title="Question Details"
+          description="View detailed information about this question"
+          size="lg"
+          className="bg-gradient-to-br from-white to-gray-50/50"
         >
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center border-b pb-4 mb-4">
-                <h3 className="text-lg font-semibold">Question Details</h3>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setViewingQuestion(null);
-                    setViewingQuestionLoading(false);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+          {viewingQuestionLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                <p className="text-gray-600 font-medium">
+                  Loading question details...
+                </p>
               </div>
-
-              {viewingQuestionLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-                  <span className="text-gray-600">
-                    Loading question details...
-                  </span>
+            </div>
+          ) : viewingQuestion ? (
+            <div className="p-6 space-y-6">
+              {/* Question Content */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Question Content
+                  </h3>
                 </div>
-              ) : viewingQuestion ? (
+
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
                       Question Text
                     </h4>
-                    <p className="text-gray-700">{viewingQuestion.text}</p>
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                      <p className="text-gray-800 leading-relaxed">
+                        {viewingQuestion.text}
+                      </p>
+                    </div>
                   </div>
 
                   {viewingQuestion.scenario && (
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">
                         Scenario
                       </h4>
-                      <p className="text-gray-700">
-                        {viewingQuestion.scenario}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-1">Type</h4>
-                      <Badge variant={getTypeColor(viewingQuestion.type)}>
-                        {getTypeIcon(viewingQuestion.type)}
-                        <span className="ml-1">
-                          {QUESTION_TYPE_LABELS[viewingQuestion.type]}
-                        </span>
-                      </Badge>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-1">
-                        Difficulty
-                      </h4>
-                      <Badge
-                        variant={getDifficultyColor(viewingQuestion.difficulty)}
-                      >
-                        {DIFFICULTY_LABELS[viewingQuestion.difficulty]}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Show options for non-matching questions */}
-                  {viewingQuestion.type !== "MATCHING" &&
-                    viewingQuestion.options.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-gray-900 mb-2">
-                          Options
-                        </h4>
-                        <div className="space-y-2">
-                          {viewingQuestion.options.map((option, index) => (
-                            <div
-                              key={option.id}
-                              className="flex items-center space-x-2"
-                            >
-                              <span
-                                className={`w-4 h-4 rounded-full ${
-                                  option.isCorrect
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                }`}
-                              ></span>
-                              <span
-                                className={
-                                  option.isCorrect ? "font-medium" : ""
-                                }
-                              >
-                                {option.text}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p className="text-amber-800 leading-relaxed">
+                          {viewingQuestion.scenario}
+                        </p>
                       </div>
-                    )}
-
-                  {/* Show matching information for matching questions */}
-                  {viewingQuestion.type === "MATCHING" && (
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-gray-900 mb-2">
-                        Matching Items
-                      </h4>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left Column */}
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">
-                            Left Column
-                          </h5>
-                          <div className="space-y-2">
-                            {viewingQuestion.leftColumn?.map((item, index) => (
-                              <div
-                                key={index}
-                                className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm"
-                              >
-                                {item}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div>
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">
-                            Right Column
-                          </h5>
-                          <div className="space-y-2">
-                            {viewingQuestion.rightColumn?.map((item, index) => (
-                              <div
-                                key={index}
-                                className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm"
-                              >
-                                {item}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Correct Matches */}
-                      {viewingQuestion.correctMatches &&
-                        Object.keys(viewingQuestion.correctMatches).length >
-                          0 && (
-                          <div>
-                            <h5 className="text-sm font-medium text-gray-700 mb-2">
-                              Correct Matches
-                            </h5>
-                            <div className="space-y-2">
-                              {Object.entries(
-                                viewingQuestion.correctMatches
-                              ).map(([leftItem, rightItem], index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-md"
-                                >
-                                  <div className="px-3 py-1 bg-blue-100 border border-blue-300 rounded text-sm font-medium">
-                                    {leftItem}
-                                  </div>
-                                  <span className="text-gray-400">→</span>
-                                  <div className="px-3 py-1 bg-green-100 border border-green-300 rounded text-sm font-medium">
-                                    {rightItem}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  )}
-
-                  {viewingQuestion.explanation && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">
-                        Explanation
-                      </h4>
-                      <p className="text-gray-700">
-                        {viewingQuestion.explanation}
-                      </p>
                     </div>
                   )}
                 </div>
-              ) : null}
+              </div>
+
+              {/* Question Metadata */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Target className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Question Properties
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <h4 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">
+                      Type
+                    </h4>
+                    <Badge
+                      variant={getTypeColor(viewingQuestion.type)}
+                      className="w-full justify-center"
+                    >
+                      {getTypeIcon(viewingQuestion.type)}
+                      <span className="ml-2">
+                        {QUESTION_TYPE_LABELS[viewingQuestion.type]}
+                      </span>
+                    </Badge>
+                  </div>
+
+                  <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                    <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
+                      Difficulty
+                    </h4>
+                    <Badge
+                      variant={getDifficultyColor(viewingQuestion.difficulty)}
+                      className="w-full justify-center"
+                    >
+                      {DIFFICULTY_LABELS[viewingQuestion.difficulty]}
+                    </Badge>
+                  </div>
+
+                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                    <h4 className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-2">
+                      Points
+                    </h4>
+                    <div className="text-2xl font-bold text-orange-800 text-center">
+                      {viewingQuestion.points}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                    <h4 className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">
+                      Status
+                    </h4>
+                    <Badge
+                      variant={
+                        viewingQuestion.status === "ACTIVE"
+                          ? "success"
+                          : "default"
+                      }
+                      className="w-full justify-center"
+                    >
+                      {viewingQuestion.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                    Category
+                  </h4>
+                  <p className="text-gray-800 font-medium">
+                    {viewingQuestion.category}
+                  </p>
+                </div>
+              </div>
+
+              {/* Answer Options for Multiple Choice / True-False */}
+              {viewingQuestion.type !== "MATCHING" &&
+                viewingQuestion.options.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <Target className="h-4 w-4 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Answer Options
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {viewingQuestion.options.map((option, index) => (
+                        <div
+                          key={option.id}
+                          className={`flex items-center space-x-4 p-4 rounded-xl border-2 transition-all ${
+                            option.isCorrect
+                              ? "border-green-300 bg-green-50"
+                              : "border-gray-200 bg-gray-50"
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                option.isCorrect
+                                  ? "bg-green-500 text-white"
+                                  : "bg-gray-300 text-gray-600"
+                              }`}
+                            >
+                              {option.isCorrect
+                                ? "✓"
+                                : String.fromCharCode(65 + index)}
+                            </div>
+                          </div>
+                          <span
+                            className={`flex-1 ${
+                              option.isCorrect
+                                ? "font-semibold text-green-800"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {option.text}
+                          </span>
+                          {option.isCorrect && (
+                            <Badge variant="success" className="text-xs">
+                              Correct Answer
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Matching Questions Content */}
+              {viewingQuestion.type === "MATCHING" && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Matching Items
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    {/* Left Column */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-blue-600">
+                            A
+                          </span>
+                        </div>
+                        <h4 className="text-base font-semibold text-gray-700">
+                          Left Column
+                        </h4>
+                      </div>
+                      <div className="space-y-3">
+                        {viewingQuestion.leftColumn?.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-3 p-3 bg-blue-50 border border-blue-200 rounded-xl"
+                          >
+                            <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-700">
+                              {index + 1}
+                            </div>
+                            <span className="text-blue-800 font-medium">
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-green-600">
+                            B
+                          </span>
+                        </div>
+                        <h4 className="text-base font-semibold text-gray-700">
+                          Right Column
+                        </h4>
+                      </div>
+                      <div className="space-y-3">
+                        {viewingQuestion.rightColumn?.map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-3 p-3 bg-green-50 border border-green-200 rounded-xl"
+                          >
+                            <div className="w-6 h-6 bg-green-200 rounded-full flex items-center justify-center text-xs font-bold text-green-700">
+                              {String.fromCharCode(65 + index)}
+                            </div>
+                            <span className="text-green-800 font-medium">
+                              {item}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Correct Matches */}
+                  {viewingQuestion.correctMatches &&
+                    Object.keys(viewingQuestion.correctMatches).length > 0 && (
+                      <div className="border-t border-gray-200 pt-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <span className="text-xs font-bold text-purple-600">
+                              →
+                            </span>
+                          </div>
+                          <h4 className="text-base font-semibold text-gray-700">
+                            Correct Matches
+                          </h4>
+                        </div>
+                        <div className="space-y-3">
+                          {Object.entries(viewingQuestion.correctMatches).map(
+                            ([leftItem, rightItem], index) => (
+                              <div
+                                key={index}
+                                className="flex items-center space-x-4 p-4 bg-purple-50 border border-purple-200 rounded-xl"
+                              >
+                                <div className="px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg text-sm font-semibold text-blue-800">
+                                  {leftItem}
+                                </div>
+                                <div className="w-8 h-8 bg-purple-200 rounded-full flex items-center justify-center">
+                                  <span className="text-purple-600 font-bold">
+                                    →
+                                  </span>
+                                </div>
+                                <div className="px-4 py-2 bg-green-100 border border-green-300 rounded-lg text-sm font-semibold text-green-800">
+                                  {rightItem}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Explanation */}
+              {viewingQuestion.explanation && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                      <Brain className="h-4 w-4 text-indigo-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Explanation
+                    </h3>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+                    <p className="text-indigo-800 leading-relaxed">
+                      {viewingQuestion.explanation}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </Card>
-        </div>
+          ) : null}
+        </Modal>
       )}
 
       {/* Delete Confirmation Dialog */}

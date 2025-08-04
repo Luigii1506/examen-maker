@@ -124,8 +124,6 @@ export enum QuestionType {
   MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
   TRUE_FALSE = "TRUE_FALSE",
   MATCHING = "MATCHING",
-  SHORT_ANSWER = "SHORT_ANSWER",
-  ESSAY = "ESSAY",
 }
 
 export enum CognitiveType {
@@ -168,8 +166,6 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   [QuestionType.MULTIPLE_CHOICE]: "Multiple Choice",
   [QuestionType.TRUE_FALSE]: "True/False",
   [QuestionType.MATCHING]: "Matching",
-  [QuestionType.SHORT_ANSWER]: "Short Answer",
-  [QuestionType.ESSAY]: "Essay",
 };
 
 export const COGNITIVE_TYPE_LABELS: Record<CognitiveType, string> = {

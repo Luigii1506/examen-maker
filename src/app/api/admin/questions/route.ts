@@ -5,13 +5,7 @@ import { z } from "zod";
 // Validation schemas
 const createQuestionSchema = z.object({
   text: z.string().min(10, "Question text must be at least 10 characters"),
-  type: z.enum([
-    "MULTIPLE_CHOICE",
-    "TRUE_FALSE",
-    "MATCHING",
-    "SHORT_ANSWER",
-    "ESSAY",
-  ]),
+  type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "MATCHING"]),
   cognitiveType: z.enum([
     "REMEMBER",
     "UNDERSTAND",
@@ -62,13 +56,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: {
-      status?: string;
-      OR?: Array<{ [key: string]: { contains: string; mode: string } }>;
-      category?: string;
-      difficulty?: string;
-      type?: string;
-    } = {
+    const where: Record<string, unknown> = {
       status: status || "ACTIVE",
     };
 
@@ -266,7 +254,7 @@ export async function POST(request: NextRequest) {
           points: validatedData.points,
           scenario: validatedData.scenario,
           explanation: validatedData.explanation,
-          correctAnswer: correctAnswer as any,
+          correctAnswer: correctAnswer,
           leftColumn: validatedData.leftColumn || undefined,
           rightColumn: validatedData.rightColumn || undefined,
           correctMatches: validatedData.correctMatches || undefined,

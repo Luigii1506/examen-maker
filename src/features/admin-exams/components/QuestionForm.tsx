@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Card, Badge } from "@/core/components";
+import {
+  Button,
+  Modal,
+  Input,
+  Select,
+  TextArea,
+  FormField,
+  Badge,
+  Card,
+} from "@/core/components";
 import {
   Save,
   X,
@@ -10,11 +19,14 @@ import {
   AlertCircle,
   FileText,
   HelpCircle,
+  Shuffle,
+  ArrowRight,
 } from "lucide-react";
 import {
   QuestionType,
   CognitiveType,
   QuestionDifficulty,
+  QuestionStatus,
   CreateQuestionInput,
   UpdateQuestionInput,
   Question,
@@ -22,7 +34,9 @@ import {
   QUESTION_TYPE_LABELS,
   COGNITIVE_TYPE_LABELS,
   DIFFICULTY_LABELS,
+  STATUS_LABELS,
 } from "../types";
+import { cn } from "@/shared/utils";
 
 interface QuestionFormProps {
   question?: Question; // For editing
@@ -38,6 +52,7 @@ interface FormData {
   category: string;
   difficulty: QuestionDifficulty;
   points: number;
+  status: QuestionStatus;
   scenario: string;
   explanation: string;
   correctAnswer: string | boolean | Record<string, unknown>;
@@ -66,6 +81,7 @@ export default function QuestionForm({
     category: QUESTION_CATEGORIES[0],
     difficulty: QuestionDifficulty.BASIC,
     points: 1,
+    status: QuestionStatus.ACTIVE,
     scenario: "",
     explanation: "",
     correctAnswer: "",
@@ -91,6 +107,7 @@ export default function QuestionForm({
         category: question.category,
         difficulty: question.difficulty,
         points: question.points,
+        status: question.status,
         scenario: question.scenario || "",
         explanation: question.explanation || "",
         correctAnswer: question.correctAnswer as string,
@@ -241,8 +258,6 @@ export default function QuestionForm({
             ? formData.correctMatches
             : formData.correctAnswer,
         options:
-          formData.type === QuestionType.SHORT_ANSWER ||
-          formData.type === QuestionType.ESSAY ||
           formData.type === QuestionType.MATCHING
             ? undefined
             : formData.options.filter((opt) => opt.text.trim()),
@@ -259,6 +274,8 @@ export default function QuestionForm({
           formData.type === QuestionType.MATCHING
             ? formData.correctMatches
             : undefined,
+        // Include status only for updates (when editing existing questions)
+        ...(question && { status: formData.status }),
       };
 
       console.log("Form data before submit:", formData);
@@ -396,290 +413,386 @@ export default function QuestionForm({
     switch (formData.type) {
       case QuestionType.MULTIPLE_CHOICE:
         return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-medium text-gray-700">
-                Options
-              </label>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Plus className="h-4 w-4 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Answer Options
+                </h3>
+              </div>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addOption}
                 disabled={formData.options.length >= 6}
+                className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4 mr-2" />
                 Add Option
               </Button>
             </div>
-            {errors.options && (
-              <p className="text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.options}
-              </p>
-            )}
 
-            <div className="space-y-3">
-              {formData.options.map((option, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg"
-                >
-                  <input
-                    type="radio"
-                    name="correctAnswer"
-                    checked={option.isCorrect}
-                    onChange={(e) =>
-                      updateOption(index, "isCorrect", e.target.checked)
-                    }
-                    className="h-4 w-4 text-blue-600"
-                  />
-                  <input
-                    type="text"
-                    value={option.text}
-                    onChange={(e) =>
-                      updateOption(index, "text", e.target.value)
-                    }
-                    placeholder={`Option ${index + 1}`}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {formData.options.length > 2 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeOption(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+            <FormField
+              error={errors.options}
+              hint="Select exactly one correct answer. You can add up to 6 options."
+            >
+              <div className="space-y-4">
+                {formData.options.map((option, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex items-center space-x-4 p-4 rounded-xl border-2 transition-all duration-200",
+                      option.isCorrect
+                        ? "border-green-200 bg-green-50"
+                        : "border-gray-200 bg-gray-50 hover:bg-gray-100"
+                    )}
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="correctAnswer"
+                        checked={option.isCorrect}
+                        onChange={(e) =>
+                          updateOption(index, "isCorrect", e.target.checked)
+                        }
+                        className="h-5 w-5 text-green-600 border-gray-300 focus:ring-green-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={option.text}
+                        onChange={(e) =>
+                          updateOption(index, "text", e.target.value)
+                        }
+                        placeholder={`Option ${index + 1}`}
+                        variant="filled"
+                        className="border-0 bg-white"
+                      />
+                    </div>
+                    {formData.options.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOption(index)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </FormField>
           </div>
         );
 
       case QuestionType.TRUE_FALSE:
         return (
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Correct Answer
-            </label>
-            {errors.correctAnswer && (
-              <p className="text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.correctAnswer}
-              </p>
-            )}
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Correct Answer
+              </h3>
+            </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  id="true-option"
-                  name="trueFalseAnswer"
-                  checked={formData.correctAnswer === true}
-                  onChange={() =>
+            <FormField
+              error={errors.correctAnswer}
+              hint="Select the correct answer for this true/false question"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className={cn(
+                    "flex items-center justify-center p-6 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                    formData.correctAnswer === true
+                      ? "border-green-400 bg-green-50 text-green-800"
+                      : "border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  )}
+                  onClick={() =>
                     setFormData((prev) => ({ ...prev, correctAnswer: true }))
                   }
-                  className="h-4 w-4 text-blue-600"
-                />
-                <label
-                  htmlFor="true-option"
-                  className="text-sm font-medium text-gray-700"
                 >
-                  True
-                </label>
-              </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id="true-option"
+                      name="trueFalseAnswer"
+                      checked={formData.correctAnswer === true}
+                      onChange={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          correctAnswer: true,
+                        }))
+                      }
+                      className="h-5 w-5 text-green-600 border-gray-300 focus:ring-green-500"
+                    />
+                    <label
+                      htmlFor="true-option"
+                      className="text-lg font-semibold cursor-pointer"
+                    >
+                      True
+                    </label>
+                  </div>
+                </div>
 
-              <div className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  id="false-option"
-                  name="trueFalseAnswer"
-                  checked={formData.correctAnswer === false}
-                  onChange={() =>
+                <div
+                  className={cn(
+                    "flex items-center justify-center p-6 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                    formData.correctAnswer === false
+                      ? "border-red-400 bg-red-50 text-red-800"
+                      : "border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700"
+                  )}
+                  onClick={() =>
                     setFormData((prev) => ({ ...prev, correctAnswer: false }))
                   }
-                  className="h-4 w-4 text-blue-600"
-                />
-                <label
-                  htmlFor="false-option"
-                  className="text-sm font-medium text-gray-700"
                 >
-                  False
-                </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id="false-option"
+                      name="trueFalseAnswer"
+                      checked={formData.correctAnswer === false}
+                      onChange={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          correctAnswer: false,
+                        }))
+                      }
+                      className="h-5 w-5 text-red-600 border-gray-300 focus:ring-red-500"
+                    />
+                    <label
+                      htmlFor="false-option"
+                      className="text-lg font-semibold cursor-pointer"
+                    >
+                      False
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
+            </FormField>
           </div>
         );
 
       case QuestionType.MATCHING:
         return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Shuffle className="h-4 w-4 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
                 Matching Items
-              </label>
-              {errors.matching && (
-                <p className="text-sm text-red-600 flex items-center mb-4">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.matching}
-                </p>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-medium text-gray-700">
-                      Left Column
-                    </h4>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addMatchingItem("left")}
-                      disabled={formData.leftColumn.length >= 8}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Item
-                    </Button>
-                  </div>
-
-                  {formData.leftColumn.map((item, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) =>
-                          updateMatchingItem("left", index, e.target.value)
-                        }
-                        placeholder={`Left item ${index + 1}`}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      {formData.leftColumn.length > 2 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMatchingItem("left", index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm font-medium text-gray-700">
-                      Right Column
-                    </h4>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addMatchingItem("right")}
-                      disabled={formData.rightColumn.length >= 8}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Item
-                    </Button>
-                  </div>
-
-                  {formData.rightColumn.map((item, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={item}
-                        onChange={(e) =>
-                          updateMatchingItem("right", index, e.target.value)
-                        }
-                        placeholder={`Right item ${index + 1}`}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      {formData.rightColumn.length > 2 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeMatchingItem("right", index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </h3>
             </div>
 
-            {/* Correct Matches */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-700">
-                Correct Matches
-              </h4>
-              <p className="text-xs text-gray-500">
-                Define which left item matches with which right item.
-              </p>
-
-              <div className="space-y-3">
-                {formData.leftColumn
-                  .filter((item) => item.trim())
-                  .map((leftItem, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-1/3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm">
-                        {leftItem || `Left item ${index + 1}`}
+            <FormField
+              error={errors.matching}
+              hint="Create items for both columns and define their correct matches. You can add up to 8 items per column."
+            >
+              <div className="space-y-8">
+                {/* Items Columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-blue-600">
+                            A
+                          </span>
+                        </div>
+                        <h4 className="text-base font-semibold text-gray-700">
+                          Left Column
+                        </h4>
                       </div>
-                      <span className="text-gray-400">→</span>
-                      <select
-                        value={formData.correctMatches[leftItem] || ""}
-                        onChange={(e) =>
-                          updateCorrectMatch(leftItem, e.target.value)
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addMatchingItem("left")}
+                        disabled={formData.leftColumn.length >= 8}
+                        className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                       >
-                        <option value="">Select matching item...</option>
-                        {formData.rightColumn
-                          .filter((item) => item.trim())
-                          .map((rightItem, rightIndex) => (
-                            <option key={rightIndex} value={rightItem}>
-                              {rightItem}
-                            </option>
-                          ))}
-                      </select>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Item
+                      </Button>
                     </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        );
 
-      case QuestionType.SHORT_ANSWER:
-      case QuestionType.ESSAY:
-        return (
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Sample Answer / Keywords
-            </label>
-            <textarea
-              value={formData.correctAnswer as string}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  correctAnswer: e.target.value,
-                }))
-              }
-              placeholder="Enter sample answer or keywords for grading reference..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={4}
-            />
+                    <div className="space-y-3">
+                      {formData.leftColumn.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100"
+                        >
+                          <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-700">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              value={item}
+                              onChange={(e) =>
+                                updateMatchingItem(
+                                  "left",
+                                  index,
+                                  e.target.value
+                                )
+                              }
+                              placeholder={`Left item ${index + 1}`}
+                              variant="filled"
+                              className="border-0 bg-white"
+                            />
+                          </div>
+                          {formData.leftColumn.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeMatchingItem("left", index)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                          <span className="text-xs font-bold text-green-600">
+                            B
+                          </span>
+                        </div>
+                        <h4 className="text-base font-semibold text-gray-700">
+                          Right Column
+                        </h4>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addMatchingItem("right")}
+                        disabled={formData.rightColumn.length >= 8}
+                        className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Item
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {formData.rightColumn.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-3 p-3 bg-green-50/50 rounded-xl border border-green-100"
+                        >
+                          <div className="w-6 h-6 bg-green-200 rounded-full flex items-center justify-center text-xs font-bold text-green-700">
+                            {String.fromCharCode(65 + index)}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              value={item}
+                              onChange={(e) =>
+                                updateMatchingItem(
+                                  "right",
+                                  index,
+                                  e.target.value
+                                )
+                              }
+                              placeholder={`Right item ${index + 1}`}
+                              variant="filled"
+                              className="border-0 bg-white"
+                            />
+                          </div>
+                          {formData.rightColumn.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeMatchingItem("right", index)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Correct Matches Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <ArrowRight className="h-3 w-3 text-purple-600" />
+                    </div>
+                    <h4 className="text-base font-semibold text-gray-700">
+                      Correct Matches
+                    </h4>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Define which left item correctly matches with which right
+                    item.
+                  </p>
+
+                  <div className="space-y-4">
+                    {formData.leftColumn
+                      .filter((item) => item.trim())
+                      .map((leftItem, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-700 flex-shrink-0">
+                              {index + 1}
+                            </div>
+                            <div className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-medium text-gray-700 truncate">
+                              {leftItem || `Left item ${index + 1}`}
+                            </div>
+                          </div>
+
+                          <ArrowRight className="h-4 w-4 text-purple-400 flex-shrink-0" />
+
+                          <div className="flex-1">
+                            <Select
+                              value={formData.correctMatches[leftItem] || ""}
+                              onChange={(e) =>
+                                updateCorrectMatch(leftItem, e.target.value)
+                              }
+                              placeholder="Select matching item..."
+                              variant="filled"
+                              className="bg-white"
+                            >
+                              <option value="">Select matching item...</option>
+                              {formData.rightColumn
+                                .filter((item) => item.trim())
+                                .map((rightItem, rightIndex) => (
+                                  <option key={rightIndex} value={rightItem}>
+                                    {String.fromCharCode(65 + rightIndex)}:{" "}
+                                    {rightItem}
+                                  </option>
+                                ))}
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </FormField>
           </div>
         );
 
@@ -689,32 +802,38 @@ export default function QuestionForm({
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-      }}
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={question ? "Edit Question" : "Create New Question"}
+      description={
+        question
+          ? "Update the question details below"
+          : "Fill out the form to create a new question"
+      }
+      size="xl"
+      className="bg-gradient-to-br from-white to-gray-50/50"
     >
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Header */}
-          <div className="flex justify-between items-center border-b pb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {question ? "Edit Question" : "Create New Question"}
-            </h2>
-            <Button type="button" variant="ghost" onClick={onCancel}>
-              <X className="h-4 w-4" />
-            </Button>
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <FileText className="h-4 w-4 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Basic Information
+            </h3>
           </div>
 
-          {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Question Type
-                </label>
-                <select
+            <div className="space-y-6">
+              <FormField
+                label="Question Type"
+                required
+                hint="Select the format of your question"
+              >
+                <Select
                   value={formData.type}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -722,21 +841,21 @@ export default function QuestionForm({
                       type: e.target.value as QuestionType,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {Object.values(QuestionType).map((type) => (
                     <option key={type} value={type}>
                       {QUESTION_TYPE_LABELS[type]}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cognitive Level
-                </label>
-                <select
+              <FormField
+                label="Cognitive Level"
+                required
+                hint="Select the thinking level required"
+              >
+                <Select
                   value={formData.cognitiveType}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -744,21 +863,21 @@ export default function QuestionForm({
                       cognitiveType: e.target.value as CognitiveType,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {Object.values(CognitiveType).map((type) => (
                     <option key={type} value={type}>
                       {COGNITIVE_TYPE_LABELS[type]}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
-                </label>
-                <select
+              <FormField
+                label="Category"
+                required
+                hint="Choose the subject category"
+              >
+                <Select
                   value={formData.category}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -766,23 +885,23 @@ export default function QuestionForm({
                       category: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {QUESTION_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Difficulty
-                </label>
-                <select
+            <div className="space-y-6">
+              <FormField
+                label="Difficulty"
+                required
+                hint="Set the question difficulty level"
+              >
+                <Select
                   value={formData.difficulty}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -790,21 +909,22 @@ export default function QuestionForm({
                       difficulty: e.target.value as QuestionDifficulty,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {Object.values(QuestionDifficulty).map((difficulty) => (
                     <option key={difficulty} value={difficulty}>
                       {DIFFICULTY_LABELS[difficulty]}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Points
-                </label>
-                <input
+              <FormField
+                label="Points"
+                required
+                error={errors.points}
+                hint="Points determine the weight of this question (1-10)"
+              >
+                <Input
                   type="number"
                   min="1"
                   max="10"
@@ -815,69 +935,100 @@ export default function QuestionForm({
                       points: parseInt(e.target.value) || 1,
                     }))
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  error={!!errors.points}
                 />
-                {errors.points && (
-                  <p className="text-sm text-red-600 mt-1">{errors.points}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <HelpCircle className="h-4 w-4" />
-                <span>
-                  Points determine the weight of this question in the exam
-                </span>
-              </div>
+              {/* Status field - only show for editing existing questions */}
+              {question && (
+                <FormField
+                  label="Status"
+                  required
+                  hint="Set the question's availability status"
+                >
+                  <Select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        status: e.target.value as QuestionStatus,
+                      }))
+                    }
+                  >
+                    {Object.values(QuestionStatus).map((status) => (
+                      <option key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </option>
+                    ))}
+                  </Select>
+                </FormField>
+              )}
             </div>
           </div>
+        </div>
 
-          {/* Question Text */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question Text *
-            </label>
-            <textarea
-              value={formData.text}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, text: e.target.value }))
-              }
-              placeholder="Enter the question text..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={4}
-            />
-            {errors.text && (
-              <p className="text-sm text-red-600 mt-1 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.text}
-              </p>
-            )}
+        {/* Question Content */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <FileText className="h-4 w-4 text-green-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Question Content
+            </h3>
           </div>
 
-          {/* Scenario (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Scenario (Optional)
-            </label>
-            <textarea
-              value={formData.scenario}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, scenario: e.target.value }))
-              }
-              placeholder="Enter a scenario or context for the question..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={3}
-            />
+          <div className="space-y-6">
+            <FormField
+              label="Question Text"
+              required
+              error={errors.text}
+              hint="Write a clear and concise question (minimum 10 characters)"
+            >
+              <TextArea
+                value={formData.text}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, text: e.target.value }))
+                }
+                placeholder="Enter the question text..."
+                rows={4}
+                error={!!errors.text}
+              />
+            </FormField>
+
+            <FormField
+              label="Scenario"
+              hint="Optional context or background information for the question"
+            >
+              <TextArea
+                value={formData.scenario}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, scenario: e.target.value }))
+                }
+                placeholder="Enter a scenario or context for the question..."
+                rows={3}
+              />
+            </FormField>
+          </div>
+        </div>
+
+        {/* Question Type Specific Fields */}
+        {renderQuestionTypeSpecificFields()}
+
+        {/* Explanation */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <HelpCircle className="h-4 w-4 text-indigo-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">Explanation</h3>
           </div>
 
-          {/* Question Type Specific Fields */}
-          {renderQuestionTypeSpecificFields()}
-
-          {/* Explanation (Optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Explanation (Optional)
-            </label>
-            <textarea
+          <FormField
+            label="Answer Explanation"
+            hint="Optional explanation to help students understand the correct answer"
+          >
+            <TextArea
               value={formData.explanation}
               onChange={(e) =>
                 setFormData((prev) => ({
@@ -886,20 +1037,30 @@ export default function QuestionForm({
                 }))
               }
               placeholder="Explain why this is the correct answer..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
             />
-          </div>
+          </FormField>
+        </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-3 pt-6 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>
+        {/* Form Actions */}
+        <div className="flex items-center justify-between pt-6 border-t border-gray-200 bg-gray-50 rounded-xl p-6 mt-8">
+          <div className="text-sm text-gray-500">
+            <HelpCircle className="h-4 w-4 inline mr-1" />
+            All required fields must be completed
+          </div>
+          <div className="flex space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="px-6"
+            >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 shadow-lg"
             >
               <Save className="h-4 w-4 mr-2" />
               {isLoading
@@ -909,8 +1070,8 @@ export default function QuestionForm({
                 : "Create Question"}
             </Button>
           </div>
-        </form>
-      </Card>
-    </div>
+        </div>
+      </form>
+    </Modal>
   );
 }

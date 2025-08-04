@@ -5,15 +5,7 @@ import { z } from "zod";
 // Validation schema for updates
 const updateQuestionSchema = z.object({
   text: z.string().min(10).optional(),
-  type: z
-    .enum([
-      "MULTIPLE_CHOICE",
-      "TRUE_FALSE",
-      "MATCHING",
-      "SHORT_ANSWER",
-      "ESSAY",
-    ])
-    .optional(),
+  type: z.enum(["MULTIPLE_CHOICE", "TRUE_FALSE", "MATCHING"]).optional(),
   cognitiveType: z
     .enum(["REMEMBER", "UNDERSTAND", "APPLY", "ANALYZE", "EVALUATE", "CREATE"])
     .optional(),
