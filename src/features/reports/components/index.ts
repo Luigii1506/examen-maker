@@ -1,2 +1,2 @@
 // Components for reports system
-export {};
+export { default as ReportsView } from "./ReportsView";

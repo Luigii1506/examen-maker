@@ -1,12 +1,63 @@
 "use client";
 
+import { useState } from "react";
 import { useProtectedPage } from "@/shared/hooks/useAuth";
 import { authClient } from "@/core/auth/auth-client";
 import { useRouter } from "next/navigation";
+import { Button, Card, Badge, LoadingSpinner } from "@/core/components";
+import {
+  User,
+  Clock,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Download,
+  Calendar,
+  Award,
+  BookOpen,
+  LogOut,
+  AlertCircle,
+} from "lucide-react";
+
+// Mock data - later this will come from our features
+const mockExamStatus = {
+  available: true,
+  completed: false,
+  score: null,
+  attempts: 0,
+  maxAttempts: 3,
+  lastAttempt: null,
+  certificateReady: false,
+};
+
+const mockPreviousExams = [
+  {
+    id: 1,
+    date: "2024-01-15",
+    score: 85,
+    status: "approved" as const,
+    certificate: true,
+  },
+  {
+    id: 2,
+    date: "2024-06-20",
+    score: 72,
+    status: "failed" as const,
+    certificate: false,
+  },
+];
+
+const mockUserProfile = {
+  company: "National Bank of Mexico",
+  position: "AML Compliance Officer",
+};
 
 export default function UserDashboardPage() {
   const { isLoading, isAuthenticated, user, isAdmin } = useProtectedPage();
   const router = useRouter();
+  const [examStatus] = useState(mockExamStatus);
+  const [previousExams] = useState(mockPreviousExams);
+  const [userProfile] = useState(mockUserProfile);
 
   const handleLogout = async () => {
     try {
@@ -22,204 +73,312 @@ export default function UserDashboardPage() {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "approved":
+        return <Badge variant="success">Approved</Badge>;
+      case "failed":
+        return <Badge variant="error">Failed</Badge>;
+      case "pending":
+        return <Badge variant="warning">Pending</Badge>;
+      default:
+        return <Badge variant="default">Available</Badge>;
+    }
+  };
+
+  const getProgressPercentage = () => {
+    return (examStatus.attempts / examStatus.maxAttempts) * 100;
+  };
+
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-gray-100">
+      <div className="flex justify-center items-center h-screen bg-gray-50">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600">Verificando autenticación...</p>
+          <LoadingSpinner size="lg" />
+          <p className="text-gray-600">Verifying authentication...</p>
         </div>
       </div>
     );
   }
 
-  // Si es admin, redirigir al dashboard de admin
+  // Redirect admins to admin dashboard
   if (isAdmin) {
     router.replace("/dashboard");
     return null;
   }
 
-  // Esta página solo se muestra si el usuario está autenticado
+  // Only show if user is authenticated
   if (!isAuthenticated || !user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Mi Panel</h1>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                {user.image && (
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
-                <span className="text-sm font-medium text-gray-700">
-                  {user.name}
-                </span>
+            <div className="flex items-center space-x-4">
+              <div className="bg-blue-900 p-2 rounded-lg">
+                <Award className="h-6 w-6 text-white" />
               </div>
-
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-              >
-                Cerrar Sesión
-              </button>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  AML Certification System
+                </h1>
+                <p className="text-sm text-gray-500">Student Portal</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500">{userProfile.position}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Welcome Card */}
-          <div className="bg-white rounded-lg shadow p-6 col-span-full">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              ¡Bienvenido, {user.name}! 👋
-            </h2>
-            <p className="text-gray-600">
-              Este es tu panel de usuario personal. Aquí puedes gestionar tu
-              perfil y configuraciones.
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Welcome, {user.name}
+          </h2>
+          <p className="text-gray-600">
+            {userProfile.company} • {userProfile.position}
+          </p>
+        </div>
 
-          {/* User Info Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Mi Información
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Email:
-                </label>
-                <p className="text-gray-900">{user.email}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Exam Section */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Current Exam Status */}
+            <Card className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <BookOpen className="h-5 w-5 text-blue-900" />
+                <h3 className="text-lg font-semibold">
+                  2024 Certification Exam
+                </h3>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Rol:
-                </label>
-                <p className="text-gray-900">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Usuario
-                  </span>
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Estado:
-                </label>
-                <p className="text-gray-900">
-                  {user.emailVerified ? (
-                    <span className="inline-flex items-center gap-1 text-green-600">
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Verificado
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-yellow-600">
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Email Pendiente
-                    </span>
+              <p className="text-gray-600 mb-6">
+                Anti-Money Laundering Certification
+              </p>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Current status:</span>
+                  {getStatusBadge(
+                    examStatus.completed ? "completed" : "available"
                   )}
-                </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Attempts used:</span>
+                  <span className="text-gray-700">
+                    {examStatus.attempts} of {examStatus.maxAttempts}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Attempt progress</span>
+                    <span>
+                      {examStatus.attempts}/{examStatus.maxAttempts}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${getProgressPercentage()}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {examStatus.available && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-blue-800 font-medium">
+                          Exam Available
+                        </p>
+                        <p className="text-blue-700 text-sm">
+                          You have a new exam attempt available. Duration: 120
+                          minutes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    className="bg-blue-900 hover:bg-blue-800"
+                    disabled={
+                      !examStatus.available ||
+                      examStatus.attempts >= examStatus.maxAttempts
+                    }
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Start Exam
+                  </Button>
+                  {examStatus.certificateReady && (
+                    <Button variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Certificate
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Miembro desde:
-                </label>
-                <p className="text-gray-900">
-                  {new Date(user.createdAt).toLocaleDateString("es-ES", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
+            </Card>
+
+            {/* Previous Exams */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-2">Exam History</h3>
+              <p className="text-gray-600 mb-6">
+                Results from previous attempts
+              </p>
+
+              <div className="space-y-4">
+                {previousExams.map((exam) => (
+                  <div
+                    key={exam.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        {exam.status === "approved" ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          Exam from{" "}
+                          {new Date(exam.date).toLocaleDateString("en-US")}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Score: {exam.score}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {getStatusBadge(exam.status)}
+                      {exam.certificate && (
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            </Card>
           </div>
 
-          {/* Quick Actions Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Acciones Rápidas
-            </h3>
-            <div className="space-y-3">
-              <button className="w-full text-left p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-                <div className="font-medium text-gray-900">Editar Perfil</div>
-                <div className="text-sm text-gray-500">
-                  Actualiza tu información personal
-                </div>
-              </button>
-              <button className="w-full text-left p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-                <div className="font-medium text-gray-900">Configuración</div>
-                <div className="text-sm text-gray-500">
-                  Ajusta tus preferencias
-                </div>
-              </button>
-              <button className="w-full text-left p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-                <div className="font-medium text-gray-900">Seguridad</div>
-                <div className="text-sm text-gray-500">
-                  Cambia tu contraseña
-                </div>
-              </button>
-            </div>
-          </div>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Profile Card */}
+            <Card className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <User className="h-5 w-5" />
+                <h3 className="text-lg font-semibold">Profile</h3>
+              </div>
 
-          {/* Activity Card */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Actividad Reciente
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Último acceso:</span>
-                <span className="font-semibold text-gray-900">Ahora</span>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Company</p>
+                  <p className="text-sm text-gray-900">{userProfile.company}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Position</p>
+                  <p className="text-sm text-gray-900">
+                    {userProfile.position}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Email</p>
+                  <p className="text-sm text-gray-900">{user.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Status</p>
+                  <div className="flex items-center space-x-1">
+                    {user.emailVerified ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-600">Verified</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-4 w-4 text-yellow-600" />
+                        <span className="text-sm text-yellow-600">
+                          Pending Verification
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Sesiones activas:</span>
-                <span className="font-semibold text-gray-900">1</span>
+            </Card>
+
+            {/* Quick Stats */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Statistics</h3>
+
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Completed exams</span>
+                  <span className="font-medium">{previousExams.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">
+                    Certificates obtained
+                  </span>
+                  <span className="font-medium">
+                    {previousExams.filter((e) => e.certificate).length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Overall average</span>
+                  <span className="font-medium">
+                    {Math.round(
+                      previousExams.reduce((acc, e) => acc + e.score, 0) /
+                        previousExams.length
+                    )}
+                    %
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Member since</span>
+                  <span className="font-medium">
+                    {new Date(user.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Perfil completo:</span>
-                <span className="font-semibold text-green-600">
-                  {user.emailVerified ? "100%" : "90%"}
-                </span>
-              </div>
-            </div>
+            </Card>
+
+            {/* Important Notice */}
+            <Card className="p-6 border-blue-200 bg-blue-50">
+              <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                Important Information
+              </h3>
+              <p className="text-sm text-blue-800">
+                Certificates are valid for 2 years. Make sure to renew your
+                certification before expiration.
+              </p>
+            </Card>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

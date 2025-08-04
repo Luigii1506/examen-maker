@@ -1,2 +1,2 @@
 // Components for certification administration
-export {};
+export { default as CertificateManagementView } from "./CertificateManagementView";

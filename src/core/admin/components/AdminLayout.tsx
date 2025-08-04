@@ -13,6 +13,10 @@ import {
   Eye,
   Upload,
   Sliders,
+  Award,
+  BookOpen,
+  ClipboardList,
+  TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/core/auth/auth-client";
@@ -84,10 +88,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         <div className="text-center">
           <Shield className="mx-auto h-12 w-12 text-slate-400" />
           <h2 className="mt-4 text-lg font-semibold text-slate-700">
-            Acceso Restringido
+            Restricted Access
           </h2>
           <p className="mt-2 text-slate-600">
-            No tienes permisos para acceder al panel de administración.
+            You do not have permissions to access the administration panel.
           </p>
         </div>
       </div>
@@ -107,9 +111,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             {/* Header Title */}
             <div>
               <h1 className="text-xl font-semibold text-slate-800">
-                Panel de Administración
+                Administration Panel
               </h1>
-              <p className="text-sm text-slate-600">Vista: {currentView}</p>
+              <p className="text-sm text-slate-600">
+                AML Certification System - Administrative View: {currentView}
+              </p>
             </div>
 
             {/* User Info & Logout */}
@@ -152,7 +158,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                 className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                Salir
+                Logout
               </button>
             </div>
           </div>
@@ -168,78 +174,161 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Admin</h2>
-              <p className="text-xs text-slate-500">Panel de Control</p>
+              <h2 className="text-lg font-bold text-slate-800">AML Admin</h2>
+              <p className="text-xs text-slate-500">Control Panel</p>
             </div>
           </div>
 
           {/* Navigation Menu */}
-          <nav className="mt-8 space-y-2">
-            <button
-              onClick={() => handleViewChange("dashboard")}
-              className={`${navLinkClass} ${
-                currentView === "dashboard"
-                  ? navLinkActiveClass
-                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              <span>Dashboard</span>
-            </button>
+          <nav className="mt-8 space-y-1">
+            {/* CORE ADMINISTRATION */}
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                Core Administration
+              </h3>
 
-            <UserManagementGate action="create">
               <button
-                onClick={() => handleViewChange("users")}
+                onClick={() => handleViewChange("dashboard")}
                 className={`${navLinkClass} ${
-                  currentView === "users"
+                  currentView === "dashboard"
                     ? navLinkActiveClass
                     : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                 }`}
               >
-                <Users className="w-4 h-4" />
-                <span>Usuarios</span>
+                <Home className="w-4 h-4" />
+                <span>Dashboard</span>
               </button>
-            </UserManagementGate>
 
-            {/* File Upload - Solo si está habilitado */}
-            {fileUploadEnabled && (
+              <UserManagementGate action="create">
+                <button
+                  onClick={() => handleViewChange("users")}
+                  className={`${navLinkClass} ${
+                    currentView === "users"
+                      ? navLinkActiveClass
+                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Users</span>
+                </button>
+              </UserManagementGate>
+
+              {/* Feature Flags - Solo para admins */}
+              {isAdmin() && (
+                <button
+                  onClick={() => handleViewChange("feature-flags")}
+                  className={`${navLinkClass} ${
+                    currentView === "feature-flags"
+                      ? navLinkActiveClass
+                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                  }`}
+                >
+                  <Sliders className="w-4 h-4" />
+                  <span>Feature Flags</span>
+                </button>
+              )}
+            </div>
+
+            {/* CERTIFICATION MANAGEMENT */}
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                Certification Management
+              </h3>
+
               <button
-                onClick={() => handleViewChange("files")}
+                onClick={() => handleViewChange("questions")}
                 className={`${navLinkClass} ${
-                  currentView === "files"
+                  currentView === "questions"
                     ? navLinkActiveClass
                     : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                 }`}
               >
-                <Upload className="w-4 h-4" />
-                <span>📁 Gestión de Archivos</span>
+                <FileText className="w-4 h-4" />
+                <span>Question Bank</span>
               </button>
-            )}
 
-            {/* Feature Flags - Solo para admins */}
-            {isAdmin() && (
               <button
-                onClick={() => handleViewChange("feature-flags")}
+                onClick={() => handleViewChange("exams")}
                 className={`${navLinkClass} ${
-                  currentView === "feature-flags"
+                  currentView === "exams"
                     ? navLinkActiveClass
                     : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                 }`}
               >
-                <Sliders className="w-4 h-4" />
-                <span>🎛️ Feature Flags</span>
+                <BookOpen className="w-4 h-4" />
+                <span>Exams & Results</span>
               </button>
-            )}
+
+              <button
+                onClick={() => handleViewChange("certificates")}
+                className={`${navLinkClass} ${
+                  currentView === "certificates"
+                    ? navLinkActiveClass
+                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <Award className="w-4 h-4" />
+                <span>Certificates</span>
+              </button>
+
+              <button
+                onClick={() => handleViewChange("reports")}
+                className={`${navLinkClass} ${
+                  currentView === "reports"
+                    ? navLinkActiveClass
+                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>Reports</span>
+              </button>
+            </div>
+
+            {/* SYSTEM SETTINGS */}
+            <div className="mb-4">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                System Settings
+              </h3>
+
+              {/* File Upload - Solo si está habilitado */}
+              {fileUploadEnabled && (
+                <button
+                  onClick={() => handleViewChange("files")}
+                  className={`${navLinkClass} ${
+                    currentView === "files"
+                      ? navLinkActiveClass
+                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>File Management</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => handleViewChange("settings")}
+                className={`${navLinkClass} ${
+                  currentView === "settings"
+                    ? navLinkActiveClass
+                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                <span>System Settings</span>
+              </button>
+            </div>
           </nav>
 
           {/* Permission Info */}
           <div className="mt-8 p-4 bg-slate-50 rounded-lg">
             <h4 className="text-sm font-medium text-slate-700 mb-2">
-              Tu Acceso
+              Your Access
             </h4>
             <div className="space-y-1 text-xs text-slate-600">
-              <div>✓ Gestión de usuarios</div>
-              {isSuperAdmin() && <div>✓ Acceso completo al sistema</div>}
+              <div>✓ User management</div>
+              <div>✓ Exam administration</div>
+              <div>✓ Certificate management</div>
+              {isSuperAdmin() && <div>✓ Full system access</div>}
             </div>
           </div>
         </div>

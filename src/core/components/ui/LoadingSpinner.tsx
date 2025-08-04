@@ -39,19 +39,9 @@ const LoadingSpinner = React.forwardRef<HTMLDivElement, LoadingSpinnerProps>(
 
     return (
       <div ref={ref} className={cn(containerClasses, className)} {...props}>
-        <Loader2
-          className={cn(
-            "animate-spin text-blue-600 dark:text-blue-400",
-            sizes[size]
-          )}
-        />
+        <Loader2 className={cn("animate-spin text-blue-600", sizes[size])} />
         {text && (
-          <span
-            className={cn(
-              "text-gray-700 dark:text-gray-300 animate-pulse",
-              textSizes[size]
-            )}
-          >
+          <span className={cn("text-gray-700 animate-pulse", textSizes[size])}>
             {text}
           </span>
         )}

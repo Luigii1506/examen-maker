@@ -33,25 +33,17 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
 
     const variants = {
       default: [
-        "bg-white dark:bg-gray-800",
-        "border border-gray-200 dark:border-gray-700",
-        hover &&
-          "hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600",
+        "bg-white",
+        "border border-gray-200",
+        hover && "hover:shadow-md hover:border-gray-300",
       ],
-      elevated: [
-        "bg-white dark:bg-gray-800",
-        "shadow-lg",
-        hover && "hover:shadow-xl",
-      ],
+      elevated: ["bg-white", "shadow-lg", hover && "hover:shadow-xl"],
       outlined: [
         "bg-transparent",
-        "border-2 border-gray-300 dark:border-gray-600",
-        hover && "hover:border-gray-400 dark:hover:border-gray-500",
+        "border-2 border-gray-300",
+        hover && "hover:border-gray-400",
       ],
-      filled: [
-        "bg-gray-50 dark:bg-gray-900",
-        hover && "hover:bg-gray-100 dark:hover:bg-gray-800",
-      ],
+      filled: ["bg-gray-50", hover && "hover:bg-gray-100"],
     };
 
     const paddings = {

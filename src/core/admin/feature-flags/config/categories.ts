@@ -61,29 +61,29 @@ export function getCategoryColors(category: FeatureGroup) {
   const colorMap: Record<string, { bg: string; border: string; text: string }> =
     {
       blue: {
-        bg: "bg-blue-50 dark:bg-blue-950",
-        border: "border-blue-200 dark:border-blue-800",
-        text: "text-blue-700 dark:text-blue-300",
+        bg: "bg-blue-50",
+        border: "border-blue-200",
+        text: "text-blue-700",
       },
       green: {
-        bg: "bg-green-50 dark:bg-green-950",
-        border: "border-green-200 dark:border-green-800",
-        text: "text-green-700 dark:text-green-300",
+        bg: "bg-green-50",
+        border: "border-green-200",
+        text: "text-green-700",
       },
       yellow: {
-        bg: "bg-yellow-50 dark:bg-yellow-950",
-        border: "border-yellow-200 dark:border-yellow-800",
-        text: "text-yellow-700 dark:text-yellow-300",
+        bg: "bg-yellow-50",
+        border: "border-yellow-200",
+        text: "text-yellow-700",
       },
       purple: {
-        bg: "bg-purple-50 dark:bg-purple-950",
-        border: "border-purple-200 dark:border-purple-800",
-        text: "text-purple-700 dark:text-purple-300",
+        bg: "bg-purple-50",
+        border: "border-purple-200",
+        text: "text-purple-700",
       },
       red: {
-        bg: "bg-red-50 dark:bg-red-950",
-        border: "border-red-200 dark:border-red-800",
-        text: "text-red-700 dark:text-red-300",
+        bg: "bg-red-50",
+        border: "border-red-200",
+        text: "text-red-700",
       },
     };
 

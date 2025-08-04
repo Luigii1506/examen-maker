@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { useAdminPage } from "@/shared/hooks/useAuth";
-import { AdminLayout } from "@/core/admin/components";
+import { AdminLayout, SystemSettingsView } from "@/core/admin/components";
 import { UsersView } from "@/core/admin/users/components";
 import { Shield, AlertTriangle } from "lucide-react";
 import { FeatureFlagsAdmin } from "@/core/admin/feature-flags";
@@ -16,6 +16,14 @@ import { FeatureFlagsAdmin } from "@/core/admin/feature-flags";
 import { FilesView } from "@/modules/file-upload/components";
 import { useFeatureFlag } from "@/shared/hooks/useFeatureFlags";
 import DashboardView from "./components/DashboardView";
+
+// Import new admin views for certification management
+import {
+  QuestionBankView,
+  ExamManagementView,
+} from "@/features/admin-exams/components";
+import { CertificateManagementView } from "@/features/admin-certifications/components";
+import { ReportsView } from "@/features/reports/components";
 
 export default function AdminDashboardPage() {
   const { isLoading, isAuthenticated, user, isAdmin } = useAdminPage();
@@ -111,6 +119,92 @@ export default function AdminDashboardPage() {
           );
         }
         return <FeatureFlagsAdmin />;
+
+      // Certification Management Views
+      case "questions":
+        // Question Bank Management
+        if (!isAdmin) {
+          return (
+            <div className="text-center py-12">
+              <Shield className="mx-auto h-8 w-8 text-slate-400" />
+              <p className="mt-2 text-slate-600">
+                You do not have permission to manage question bank.
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                You need administrator access to view this section.
+              </p>
+            </div>
+          );
+        }
+        return <QuestionBankView />;
+
+      case "exams":
+        // Exam and Results Management
+        if (!isAdmin) {
+          return (
+            <div className="text-center py-12">
+              <Shield className="mx-auto h-8 w-8 text-slate-400" />
+              <p className="mt-2 text-slate-600">
+                You do not have permission to manage exams and results.
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                You need administrator access to view this section.
+              </p>
+            </div>
+          );
+        }
+        return <ExamManagementView />;
+
+      case "certificates":
+        // Certificate Management
+        if (!isAdmin) {
+          return (
+            <div className="text-center py-12">
+              <Shield className="mx-auto h-8 w-8 text-slate-400" />
+              <p className="mt-2 text-slate-600">
+                You do not have permission to manage certificates.
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                You need administrator access to view this section.
+              </p>
+            </div>
+          );
+        }
+        return <CertificateManagementView />;
+
+      case "reports":
+        // Reports and Analytics
+        if (!isAdmin) {
+          return (
+            <div className="text-center py-12">
+              <Shield className="mx-auto h-8 w-8 text-slate-400" />
+              <p className="mt-2 text-slate-600">
+                You do not have permission to view reports.
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                You need administrator access to view this section.
+              </p>
+            </div>
+          );
+        }
+        return <ReportsView />;
+
+      case "settings":
+        // System Settings
+        if (!isAdmin) {
+          return (
+            <div className="text-center py-12">
+              <Shield className="mx-auto h-8 w-8 text-slate-400" />
+              <p className="mt-2 text-slate-600">
+                You do not have permission to modify system settings.
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                You need administrator access to view this section.
+              </p>
+            </div>
+          );
+        }
+        return <SystemSettingsView />;
 
       default:
         return <DashboardView onViewChange={setCurrentView} />;
