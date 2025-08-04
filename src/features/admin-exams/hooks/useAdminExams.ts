@@ -13,7 +13,7 @@ import {
 // HOOK STATE INTERFACE
 // ===========================================
 
-interface UseExamsState {
+interface UseAdminExamsState {
   // Data
   exams: Exam[];
   currentExam: Exam | null;
@@ -49,6 +49,10 @@ interface UseExamsState {
   updateExam: (id: string, data: UpdateExamInput) => Promise<Exam>;
   deleteExam: (id: string) => Promise<void>;
   getExam: (id: string) => Promise<Exam>;
+  assignUsers: (examId: string, userIds: string[]) => Promise<void>;
+  unassignUser: (examId: string, userId: string) => Promise<void>;
+  startExam: (examId: string) => Promise<void>;
+  endExam: (examId: string) => Promise<void>;
 
   // Filter operations
   updateFilters: (newFilters: Partial<ExamFilters>) => void;
@@ -71,6 +75,7 @@ const defaultFilters: ExamFilters = {
   category: undefined,
   difficulty: undefined,
   status: undefined,
+  examType: undefined,
 };
 
 const defaultPagination = {
@@ -93,7 +98,9 @@ const defaultStats = {
 // HOOK IMPLEMENTATION
 // ===========================================
 
-export function useExams(initialFilters?: Partial<ExamFilters>): UseExamsState {
+export function useAdminExams(
+  initialFilters?: Partial<ExamFilters>
+): UseAdminExamsState {
   // State
   const [exams, setExams] = useState<Exam[]>([]);
   const [currentExam, setCurrentExam] = useState<Exam | null>(null);
@@ -125,6 +132,8 @@ export function useExams(initialFilters?: Partial<ExamFilters>): UseExamsState {
         if (activeFilters.difficulty)
           params.append("difficulty", activeFilters.difficulty);
         if (activeFilters.status) params.append("status", activeFilters.status);
+        if (activeFilters.examType)
+          params.append("examType", activeFilters.examType);
         if (activeFilters.page)
           params.append("page", activeFilters.page.toString());
         if (activeFilters.limit)
@@ -321,6 +330,114 @@ export function useExams(initialFilters?: Partial<ExamFilters>): UseExamsState {
   }, []);
 
   // ===========================================
+  // NEW: EXAM ASSIGNMENT & CONTROL OPERATIONS
+  // ===========================================
+
+  const assignUsers = useCallback(
+    async (examId: string, userIds: string[]): Promise<void> => {
+      try {
+        const response = await fetch(`/api/admin/exams/${examId}/assignments`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userIds }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to assign users");
+        }
+
+        // Refresh exams to update assignment counts
+        await fetchExams();
+      } catch (err) {
+        console.error("Failed to assign users:", err);
+        throw new Error(
+          err instanceof Error ? err.message : "Failed to assign users"
+        );
+      }
+    },
+    [fetchExams]
+  );
+
+  const unassignUser = useCallback(
+    async (examId: string, userId: string): Promise<void> => {
+      try {
+        const response = await fetch(`/api/admin/exams/${examId}/assignments`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to unassign user");
+        }
+
+        // Refresh exams to update assignment counts
+        await fetchExams();
+      } catch (err) {
+        console.error("Failed to unassign user:", err);
+        throw new Error(
+          err instanceof Error ? err.message : "Failed to unassign user"
+        );
+      }
+    },
+    [fetchExams]
+  );
+
+  const startExam = useCallback(
+    async (examId: string): Promise<void> => {
+      try {
+        const response = await fetch(`/api/admin/exams/${examId}/start`, {
+          method: "POST",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to start exam");
+        }
+
+        // Refresh exams to update status
+        await fetchExams();
+      } catch (err) {
+        console.error("Failed to start exam:", err);
+        throw new Error(
+          err instanceof Error ? err.message : "Failed to start exam"
+        );
+      }
+    },
+    [fetchExams]
+  );
+
+  const endExam = useCallback(
+    async (examId: string): Promise<void> => {
+      try {
+        const response = await fetch(`/api/admin/exams/${examId}/start`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to end exam");
+        }
+
+        // Refresh exams to update status
+        await fetchExams();
+      } catch (err) {
+        console.error("Failed to end exam:", err);
+        throw new Error(
+          err instanceof Error ? err.message : "Failed to end exam"
+        );
+      }
+    },
+    [fetchExams]
+  );
+
+  // ===========================================
   // FILTER OPERATIONS
   // ===========================================
 
@@ -390,6 +507,10 @@ export function useExams(initialFilters?: Partial<ExamFilters>): UseExamsState {
     updateExam,
     deleteExam,
     getExam,
+    assignUsers,
+    unassignUser,
+    startExam,
+    endExam,
 
     // Filter operations
     updateFilters,
@@ -459,4 +580,4 @@ export function useQuestionsForExam() {
   };
 }
 
-export default useExams;
+export default useAdminExams;

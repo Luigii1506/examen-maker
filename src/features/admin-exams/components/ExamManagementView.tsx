@@ -20,7 +20,7 @@ import {
   FileText,
   Target,
 } from "lucide-react";
-import { useExams } from "../hooks";
+import { useAdminExams } from "../hooks/useAdminExams";
 import { ExamForm } from "./";
 import {
   Exam,
@@ -28,6 +28,8 @@ import {
   UpdateExamInput,
   EXAM_DIFFICULTY_LABELS,
   EXAM_STATUS_LABELS,
+  EXAM_TYPE_LABELS,
+  ExamType,
 } from "../types/exam";
 
 export default function ExamManagementView() {
@@ -43,7 +45,7 @@ export default function ExamManagementView() {
     updateExam,
     deleteExam,
     getExam,
-  } = useExams();
+  } = useAdminExams();
 
   const [activeTab, setActiveTab] = useState("exams");
   const [searchTerm, setSearchTerm] = useState("");

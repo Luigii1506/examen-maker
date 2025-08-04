@@ -1,3 +1,3 @@
 // Hooks for exam administration
-export { default as useExams, useQuestionsForExam } from "./useExams";
+export { useAdminExams as default, useQuestionsForExam } from "./useAdminExams";
 export { useQuestions } from "./useQuestions";

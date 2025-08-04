@@ -13,6 +13,21 @@ import {
 } from "@prisma/client";
 
 // ===========================================
+// NEW TYPES (until Prisma migration)
+// ===========================================
+
+export type ExamType =
+  | "SCHEDULED" // Admin assigns users and controls start time
+  | "SELF_PACED" // Admin assigns users, they start when they want
+  | "PUBLIC"; // Open to all users, no assignment needed
+
+export type AssignmentStatus =
+  | "ASSIGNED" // User is assigned to the exam
+  | "STARTED" // User has started taking the exam
+  | "COMPLETED" // User has completed the exam
+  | "CANCELLED"; // Assignment was cancelled
+
+// ===========================================
 // CORE INTERFACES
 // ===========================================
 
@@ -26,9 +41,15 @@ export interface Exam {
   totalQuestions: number;
   passingScore: number; // Minimum score to pass (percentage)
   status: ExamStatus;
+  examType: ExamType; // NEW: Type of exam (SCHEDULED/SELF_PACED/PUBLIC)
+
+  // Global exam timing (for SCHEDULED exams)
+  examStartedAt?: Date | null;
+  examEndsAt?: Date | null;
 
   // Relationships
   questions?: Question[];
+  assignments?: ExamAssignment[]; // NEW: Users assigned to this exam
 
   // Metadata
   createdAt: Date;
@@ -40,6 +61,28 @@ export interface Exam {
   passRate?: number;
   averageScore?: number;
   lastAttempt?: Date;
+}
+
+// ===========================================
+// NEW ASSIGNMENT INTERFACE
+// ===========================================
+
+export interface ExamAssignment {
+  id: string;
+  examId: string;
+  userId: string;
+  status: AssignmentStatus;
+  assignedAt: Date;
+  assignedBy?: string | null;
+
+  // Relationships
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+  };
+  exam?: Exam;
 }
 
 export interface Question {
@@ -96,6 +139,7 @@ export interface CreateExamInput {
   category: string;
   difficulty: ExamDifficulty;
   passingScore: number;
+  examType: ExamType; // NEW: Type of exam
   questionIds?: string[]; // Questions to include in the exam
 }
 
@@ -107,6 +151,7 @@ export interface UpdateExamInput {
   difficulty?: ExamDifficulty;
   passingScore?: number;
   status?: ExamStatus;
+  examType?: ExamType; // NEW: Type of exam
   questionIds?: string[]; // Questions to include in the exam
 }
 
@@ -115,6 +160,7 @@ export interface ExamFilters {
   category?: string;
   difficulty?: ExamDifficulty;
   status?: ExamStatus;
+  examType?: ExamType; // NEW: Filter by exam type
   page?: number;
   limit?: number;
 }
@@ -216,11 +262,28 @@ export const EXAM_DIFFICULTY_LABELS: Record<ExamDifficulty, string> = {
   ADVANCED: "Advanced",
 };
 
-export const EXAM_STATUS_LABELS: Record<ExamStatus, string> = {
+// Temporary extended status labels (until Prisma migration)
+export const EXAM_STATUS_LABELS = {
   DRAFT: "Draft",
+  ASSIGNED: "Assigned", // NEW
+  STARTED: "Started", // NEW
   ACTIVE: "Active",
+  COMPLETED: "Completed", // NEW
   ARCHIVED: "Archived",
   SUSPENDED: "Suspended",
+} as const;
+
+export const EXAM_TYPE_LABELS: Record<ExamType, string> = {
+  SCHEDULED: "Scheduled",
+  SELF_PACED: "Self-Paced",
+  PUBLIC: "Public",
+};
+
+export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = {
+  ASSIGNED: "Assigned",
+  STARTED: "Started",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
 };
 
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
@@ -280,6 +343,7 @@ export interface ExamFormState {
   description: string;
   category: string;
   difficulty: ExamDifficulty;
+  examType: ExamType; // NEW: Type of exam
 
   // Configuration
   duration: number;

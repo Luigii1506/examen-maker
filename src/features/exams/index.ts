@@ -1,20 +1,21 @@
-// Feature: User Exam System
-// This module handles all functionality related to users taking exams
+// ===========================================
+// EXAMS FEATURE - USER EXAM TAKING
+// ===========================================
 
-// Export components
-export * from "./components";
-
-// Export hooks
+// Hooks
 export * from "./hooks";
 
-// Export services
-export * from "./services";
+// Components
+export * from "./components";
 
-// Export types
-export * from "./types";
-
-// Export utilities
+// Utils
 export * from "./utils";
 
-// Export configuration
+// Types
+export * from "./types";
+
+// Config
 export * from "./config";
+
+// Services
+export * from "./services";

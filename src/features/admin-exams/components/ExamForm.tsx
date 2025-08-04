@@ -33,13 +33,15 @@ import {
   ExamFormState,
   ExamDifficulty,
   ExamStatus,
+  ExamType,
   EXAM_CATEGORIES,
   EXAM_DIFFICULTY_LABELS,
   EXAM_STATUS_LABELS,
+  EXAM_TYPE_LABELS,
   EXAM_VALIDATION,
   Question,
 } from "../types/exam";
-import { useQuestionsForExam } from "../hooks";
+import { useQuestionsForExam } from "../hooks/useAdminExams";
 import {
   QUESTION_TYPE_LABELS,
   COGNITIVE_TYPE_LABELS,
@@ -348,6 +350,7 @@ export default function ExamForm({
     description: exam?.description || "",
     category: exam?.category || EXAM_CATEGORIES[0],
     difficulty: exam?.difficulty || ExamDifficulty.BASIC,
+    examType: exam?.examType || "SCHEDULED", // Default to SCHEDULED
     duration: exam?.duration || 60,
     passingScore: exam?.passingScore || 70,
     selectedQuestions: exam?.questions || [],
@@ -453,6 +456,7 @@ export default function ExamForm({
         description: formState.description.trim() || undefined,
         category: formState.category,
         difficulty: formState.difficulty,
+        examType: formState.examType,
         duration: formState.duration,
         passingScore: formState.passingScore,
         questionIds: formState.selectedQuestions.map((q) => q.id),
@@ -551,6 +555,77 @@ export default function ExamForm({
                       )
                     )}
                   </Select>
+                </FormField>
+
+                <FormField
+                  label="Exam Type"
+                  required
+                  hint="Choose how this exam will be managed and accessed"
+                >
+                  <Select
+                    value={formState.examType}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        examType: e.target.value as ExamType,
+                      }))
+                    }
+                  >
+                    {Object.entries(EXAM_TYPE_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+
+                  {/* Exam Type Description */}
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    {formState.examType === "SCHEDULED" && (
+                      <div className="flex items-start space-x-2">
+                        <Clock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-gray-700">
+                          <p className="font-medium text-blue-900 mb-1">
+                            Scheduled Exam
+                          </p>
+                          <p>
+                            You assign specific users and control when the exam
+                            starts for everyone simultaneously. All participants
+                            will have the same time limit.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {formState.examType === "SELF_PACED" && (
+                      <div className="flex items-start space-x-2">
+                        <Users className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-gray-700">
+                          <p className="font-medium text-green-900 mb-1">
+                            Self-Paced Exam
+                          </p>
+                          <p>
+                            You assign specific users, but each can start the
+                            exam whenever they want. Great for personalized
+                            training or study guides.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {formState.examType === "PUBLIC" && (
+                      <div className="flex items-start space-x-2">
+                        <BookOpen className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-gray-700">
+                          <p className="font-medium text-purple-900 mb-1">
+                            Public Exam
+                          </p>
+                          <p>
+                            Available to all users without assignment. Perfect
+                            for practice exams or general knowledge tests that
+                            anyone can take.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </FormField>
 
                 <FormField

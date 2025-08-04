@@ -14,9 +14,17 @@ model Exam {
   passingScore   Int    // Minimum score to pass (percentage)
   status      ExamStatus @default(DRAFT)
   
+  // Exam type determines behavior
+  examType    ExamType @default(SCHEDULED)
+  
+  // Global exam timing (controlled by admin for SCHEDULED type)
+  examStartedAt DateTime?  // When admin started the exam (SCHEDULED only)
+  examEndsAt    DateTime?  // When the exam will end (SCHEDULED only)
+  
   // Relationships
-  questions   Question[]
-  attempts    ExamAttempt[]
+  questions     Question[]
+  attempts      ExamAttempt[]
+  assignments   ExamAssignment[] // Users assigned (SCHEDULED and SELF_PACED)
   
   // Metadata
   createdAt   DateTime @default(now())
@@ -131,6 +139,27 @@ model QuestionAttempt {
   @@map("question_attempts")
 }
 
+model ExamAssignment {
+  id        String   @id @default(cuid())
+  examId    String
+  userId    String
+  status    AssignmentStatus @default(ASSIGNED)
+  
+  // Assignment details
+  assignedAt  DateTime  @default(now())
+  assignedBy  String?   // Admin who assigned the user
+  
+  // Relationships
+  exam      Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  
+  // Metadata
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@unique([examId, userId])
+  @@map("exam_assignments")
+}
+
 model Certificate {
   id              String           @id @default(cuid())
   userId          String
@@ -168,11 +197,20 @@ enum ExamDifficulty {
   ADVANCED
 }
 
+enum ExamType {
+  SCHEDULED   // Admin assigns users and controls start time
+  SELF_PACED  // Admin assigns users, they start when they want
+  PUBLIC      // Open to all users, no assignment needed
+}
+
 enum ExamStatus {
-  DRAFT
-  ACTIVE
-  ARCHIVED
-  SUSPENDED
+  DRAFT       // Being created by admin
+  ASSIGNED    // Assigned to users but not started (SCHEDULED/SELF_PACED)
+  STARTED     // Admin has started the exam, users can take it (SCHEDULED only)
+  ACTIVE      // Exam is active and available (SELF_PACED/PUBLIC)
+  COMPLETED   // Exam time has ended (SCHEDULED only)
+  ARCHIVED    // Archived
+  SUSPENDED   // Temporarily suspended
 }
 
 enum QuestionType {
@@ -208,6 +246,13 @@ enum AttemptStatus {
   COMPLETED
   ABANDONED
   SUSPENDED
+}
+
+enum AssignmentStatus {
+  ASSIGNED    // User is assigned to the exam
+  STARTED     // User has started taking the exam
+  COMPLETED   // User has completed the exam
+  CANCELLED   // Assignment was cancelled
 }
 
 enum CertificateStatus {
