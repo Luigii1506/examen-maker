@@ -39,6 +39,7 @@ export default function UserExamDashboard() {
     error: examsError,
     refresh,
   } = useUserExams();
+
   const router = useRouter();
   const [userProfile] = useState(mockUserProfile);
 

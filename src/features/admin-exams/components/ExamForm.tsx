@@ -155,8 +155,7 @@ function QuestionSelection({
 
   useEffect(() => {
     fetchQuestions({
-      unassignedOnly: true,
-      excludeExamId,
+      ...(excludeExamId && { excludeExamId }),
       search: searchTerm,
       ...filters,
     });

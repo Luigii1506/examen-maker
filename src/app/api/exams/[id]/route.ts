@@ -36,21 +36,22 @@ export async function GET(
         id: examId,
         status: ExamStatus.ACTIVE, // Only active exams for users
       },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        duration: true,
+        category: true,
+        difficulty: true,
+        totalQuestions: true,
+        passingScore: true,
+        status: true,
+        examType: true,
+        createdAt: true,
+        updatedAt: true,
         questions: {
           where: { status: QuestionStatus.ACTIVE },
           orderBy: { order: "asc" },
-          include: {
-            options: {
-              orderBy: { order: "asc" },
-              select: {
-                id: true,
-                text: true,
-                order: true,
-                // Don't include isCorrect for security
-              },
-            },
-          },
           select: {
             id: true,
             text: true,
@@ -61,7 +62,15 @@ export async function GET(
             points: true,
             order: true,
             scenario: true,
-            options: true,
+            options: {
+              orderBy: { order: "asc" },
+              select: {
+                id: true,
+                text: true,
+                order: true,
+                // Don't include isCorrect for security
+              },
+            },
             // Don't include correctAnswer, explanation for security
           },
         },

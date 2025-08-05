@@ -169,108 +169,121 @@ export default function ExamTaking({ examId }: ExamTakingProps) {
   const currentQ = questions[currentQuestion];
   const answeredQuestions = Object.keys(answers).length;
 
+  const getQuestionTypeColor = (type: string) => {
+    switch (type) {
+      case "MULTIPLE_CHOICE":
+        return "bg-blue-100 text-blue-800";
+      case "TRUE_FALSE":
+        return "bg-green-100 text-green-800";
+      case "MATCHING":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getCognitiveTypeColor = (type: string) => {
+    switch (type) {
+      case "REMEMBER":
+        return "bg-blue-100 text-blue-800";
+      case "UNDERSTAND":
+        return "bg-green-100 text-green-800";
+      case "APPLY":
+        return "bg-amber-100 text-amber-800";
+      case "ANALYZE":
+        return "bg-purple-100 text-purple-800";
+      case "EVALUATE":
+        return "bg-red-100 text-red-800";
+      case "CREATE":
+        return "bg-indigo-100 text-indigo-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case "BASIC":
+        return "bg-emerald-100 text-emerald-800";
+      case "INTERMEDIATE":
+        return "bg-yellow-100 text-yellow-800";
+      case "ADVANCED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const renderQuestionContent = () => {
     if (!currentQ) return null;
 
-    return (
-      <div className="space-y-6">
-        {/* Question Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-500">
-                  Question {currentQuestion + 1} of {questions.length}
-                </span>
-                {markedForReview.has(currentQ.id) && (
-                  <Flag className="h-4 w-4 text-yellow-500" />
-                )}
-              </div>
-              <Badge variant="outline" className="text-xs">
-                {currentQ.points} {currentQ.points === 1 ? "point" : "points"}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {currentQ.category}
-              </Badge>
-            </div>
-
-            {/* Scenario if exists */}
-            {currentQ.scenario && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="flex items-start space-x-2">
-                  <BookOpen className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-blue-900 mb-2">Scenario</h4>
-                    <p className="text-blue-800 text-sm leading-relaxed">
-                      {currentQ.scenario}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Question Text */}
-            <div className="prose prose-gray max-w-none">
-              <h3 className="text-lg font-semibold text-gray-900 leading-relaxed">
-                {currentQ.text}
-              </h3>
-            </div>
-          </div>
-        </div>
-
-        {/* Answer Options */}
-        <div className="space-y-3">
-          {currentQ.options
-            .sort((a, b) => a.order - b.order)
-            .map((option) => {
-              const isSelected = answers[currentQ.id] === option.id;
+    switch (currentQ.type) {
+      case "TRUE_FALSE":
+        return (
+          <div className="space-y-4">
+            {["True", "False"].map((option, index) => {
+              const isSelected = answers[currentQ.id] === option;
               return (
-                <label
-                  key={option.id}
-                  className={`
-                    flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-all
-                    ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                    }
-                  `}
+                <Card
+                  key={index}
+                  className={`border-2 cursor-pointer transition-colors ${
+                    isSelected
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => handleAnswerChange(currentQ.id, option)}
                 >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {isSelected ? (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-gray-400" />
-                    )}
+                  <div className="p-6">
+                    <div className="flex items-center justify-center space-x-3">
+                      {isSelected ? (
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-gray-400" />
+                      )}
+                      <span className="text-lg font-medium">{option}</span>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <span
-                      className={`
-                        text-sm leading-relaxed
-                        ${
-                          isSelected
-                            ? "text-blue-900 font-medium"
-                            : "text-gray-700"
-                        }
-                      `}
-                    >
-                      {option.text}
-                    </span>
-                  </div>
-                  <input
-                    type="radio"
-                    name={`question-${currentQ.id}`}
-                    value={option.id}
-                    checked={isSelected}
-                    onChange={() => handleAnswerChange(currentQ.id, option.id)}
-                    className="sr-only"
-                  />
-                </label>
+                </Card>
               );
             })}
-        </div>
-      </div>
-    );
+          </div>
+        );
+
+      default: // MULTIPLE_CHOICE
+        return (
+          <div className="space-y-3">
+            {currentQ.options
+              .sort((a, b) => a.order - b.order)
+              .map((option) => {
+                const isSelected = answers[currentQ.id] === option.id;
+                return (
+                  <Card
+                    key={option.id}
+                    className={`border-2 cursor-pointer transition-colors ${
+                      isSelected
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    onClick={() => handleAnswerChange(currentQ.id, option.id)}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-start space-x-3">
+                        {isSelected ? (
+                          <CheckCircle className="h-5 w-5 text-blue-600 mt-1" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-gray-400 mt-1" />
+                        )}
+                        <span className="text-sm leading-relaxed">
+                          {option.text}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+          </div>
+        );
+    }
   };
 
   const ConfirmSubmitDialog = () => (
@@ -315,210 +328,276 @@ export default function ExamTaking({ examId }: ExamTakingProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <header className="bg-white shadow-sm border-b h-16 flex-shrink-0">
+        <div className="px-6 py-4 h-full">
+          <div className="flex justify-between items-center h-full">
+            {/* Logo y Sistema */}
             <div className="flex items-center space-x-4">
               <div className="bg-blue-900 p-2 rounded-lg">
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">
+                <h1 className="text-lg font-bold text-gray-800">
                   {exam.title}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-600">
                   {exam.category} • {exam.difficulty}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-6">
-              {/* Timer */}
-              <div className="flex items-center space-x-2 text-sm">
-                <Timer className="h-4 w-4 text-gray-500" />
-                <span
-                  className={`font-medium ${
-                    timeLeft < 300 ? "text-red-600" : "text-gray-700"
-                  }`}
-                >
-                  {formatTime(timeLeft)}
-                </span>
+            {/* Info del Candidato */}
+            <div className="flex items-center space-x-3 bg-gray-50 px-4 py-2 rounded-lg">
+              <User className="h-5 w-5 text-gray-600" />
+              <div>
+                <p className="text-sm font-semibold text-gray-800">
+                  {user.name}
+                </p>
+                <p className="text-xs text-gray-600">{user.email}</p>
               </div>
+            </div>
 
-              {/* Progress */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span>
-                  {answeredQuestions} / {questions.length}
-                </span>
-                <div className="w-20 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
-                    style={{
-                      width: `${(answeredQuestions / questions.length) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* User Menu */}
-              <div className="flex items-center space-x-2">
-                <div className="text-right text-sm">
-                  <p className="font-medium text-gray-900">{user.name}</p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+            {/* Controles */}
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm">
+                <Pause className="h-4 w-4 mr-1" />
+                Pause
+              </Button>
+              <Button variant="outline" size="sm">
+                <HelpCircle className="h-4 w-4 mr-1" />
+                Help
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-1" />
+                Exit
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Question Content */}
-          <div className="lg:col-span-3">
-            <Card className="p-6 mb-6">{renderQuestionContent()}</Card>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Panel Lateral Izquierdo */}
+        <div className="w-80 bg-white shadow-lg border-r flex flex-col">
+          {/* Título del Panel */}
+          <div className="p-4 border-b bg-gray-50">
+            <h2 className="font-bold text-gray-800 text-center">
+              Question List
+            </h2>
+          </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentQuestion(Math.max(0, currentQuestion - 1))
-                  }
-                  disabled={currentQuestion === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Previous
-                </Button>
+          {/* Grid de Preguntas */}
+          <div className="p-4 border-b flex-1 overflow-y-auto">
+            <div className="grid grid-cols-8 gap-1 mb-4">
+              {questions.map((question, index) => {
+                const isAnswered = answers[question.id];
+                const isMarked = markedForReview.has(question.id);
+                const isCurrent = index === currentQuestion;
 
-                <Button
-                  variant="outline"
-                  onClick={() => handleMarkForReview(currentQ.id)}
-                  className={
-                    markedForReview.has(currentQ.id)
-                      ? "bg-yellow-50 border-yellow-300 text-yellow-700"
-                      : ""
-                  }
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  {markedForReview.has(currentQ.id) ? "Unmark" : "Mark"} for
-                  Review
-                </Button>
+                return (
+                  <button
+                    key={question.id}
+                    onClick={() => setCurrentQuestion(index)}
+                    className={`
+                      w-8 h-8 text-xs font-semibold rounded border transition-colors
+                      ${
+                        isCurrent
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : isAnswered
+                          ? "bg-green-500 text-white border-green-500"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                      }
+                      ${isMarked ? "ring-2 ring-yellow-400" : ""}
+                    `}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Leyenda */}
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                <span>Current</span>
               </div>
-
-              <div className="flex items-center space-x-3">
-                {currentQuestion < questions.length - 1 ? (
-                  <Button
-                    onClick={() =>
-                      setCurrentQuestion(
-                        Math.min(questions.length - 1, currentQuestion + 1)
-                      )
-                    }
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => setShowConfirmDialog(true)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Submit Exam
-                  </Button>
-                )}
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span>Answered</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-white rounded border border-gray-300"></div>
+                <span>Pending</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-white rounded border border-gray-300 ring-2 ring-yellow-400"></div>
+                <span>Marked</span>
               </div>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Question Grid */}
-            <Card className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Questions</h3>
-              <div className="grid grid-cols-5 gap-2">
-                {questions.map((question, index) => {
-                  const isAnswered = answers[question.id];
-                  const isMarked = markedForReview.has(question.id);
-                  const isCurrent = index === currentQuestion;
+          {/* Timer y Progreso */}
+          <div className="p-4 border-b">
+            <div className="text-center mb-4">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Clock className="h-5 w-5 text-gray-600" />
+                <span
+                  className={`text-xl font-bold ${
+                    timeLeft < 300 ? "text-red-600" : "text-gray-800"
+                  }`}
+                >
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">Time Remaining</p>
+            </div>
 
-                  return (
-                    <button
-                      key={question.id}
-                      onClick={() => setCurrentQuestion(index)}
-                      className={`
-                        w-8 h-8 text-xs font-medium rounded border-2 transition-all
-                        ${
-                          isCurrent
-                            ? "border-blue-500 bg-blue-500 text-white"
-                            : isAnswered
-                            ? "border-green-500 bg-green-50 text-green-700"
-                            : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                        }
-                        ${isMarked ? "ring-2 ring-yellow-400" : ""}
-                      `}
+            <div className="text-center">
+              <p className="text-lg font-bold text-gray-800 mb-1">
+                {answeredQuestions}/{questions.length}
+              </p>
+              <p className="text-sm text-gray-600 mb-2">Completed</p>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  style={{
+                    width: `${(answeredQuestions / questions.length) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botón Terminar */}
+          <div className="p-4">
+            <Button
+              onClick={() => setShowConfirmDialog(true)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Submit Exam
+            </Button>
+          </div>
+        </div>
+
+        {/* Área Principal - Preguntas */}
+        <div className="flex-1 flex flex-col">
+          {/* Contenido de la Pregunta */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+              {/* Header de la Pregunta */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Question {currentQuestion + 1}.
+                  </h2>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={getQuestionTypeColor(currentQ.type)}>
+                      <Brain className="h-4 w-4 mr-1" />
+                      {currentQ.type.replace("_", " ")}
+                    </Badge>
+                    <Badge
+                      className={getCognitiveTypeColor(currentQ.cognitiveType)}
                     >
-                      {index + 1}
-                    </button>
-                  );
-                })}
-              </div>
-            </Card>
+                      <Lightbulb className="h-4 w-4 mr-1" />
+                      {currentQ.cognitiveType}
+                    </Badge>
+                    <Badge className={getDifficultyColor(currentQ.difficulty)}>
+                      {currentQ.difficulty}
+                    </Badge>
+                    <Badge variant="outline">{currentQ.points} points</Badge>
+                  </div>
+                </div>
 
-            {/* Legend */}
-            <Card className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Legend</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-blue-500 rounded border-2 border-blue-500"></div>
-                  <span>Current</span>
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Category:</span>{" "}
+                    {currentQ.category}
+                  </p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-green-50 border-2 border-green-500 rounded"></div>
-                  <span>Answered</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded ring-2 ring-yellow-400"></div>
-                  <span>Marked</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded"></div>
-                  <span>Not answered</span>
-                </div>
-              </div>
-            </Card>
 
-            {/* Quick Stats */}
-            <Card className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Statistics</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Answered</span>
-                  <span className="font-medium">{answeredQuestions}</span>
+                {currentQ.scenario && (
+                  <Card className="mb-6 border-blue-200 bg-blue-50">
+                    <div className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <AlertTriangle className="h-5 w-5 text-blue-600 mt-1" />
+                        <div>
+                          <h4 className="font-bold text-blue-900 mb-2">
+                            Scenario
+                          </h4>
+                          <p className="text-blue-800 text-sm">
+                            {currentQ.scenario}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                <div className="mb-6">
+                  <p className="text-gray-900 leading-relaxed">
+                    {currentQ.text}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Remaining</span>
-                  <span className="font-medium">
-                    {questions.length - answeredQuestions}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Marked</span>
-                  <span className="font-medium">{markedForReview.size}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Progress</span>
-                  <span className="font-medium">
-                    {Math.round((answeredQuestions / questions.length) * 100)}%
-                  </span>
+
+                <div className="text-center mb-6">
+                  <p className="text-gray-700 font-medium bg-gray-100 inline-block px-4 py-2 rounded">
+                    Select the correct answer
+                  </p>
                 </div>
               </div>
-            </Card>
+
+              {/* Opciones de Respuesta */}
+              {renderQuestionContent()}
+            </div>
+          </div>
+
+          {/* Navegación Inferior */}
+          <div className="bg-white border-t p-4 flex-shrink-0">
+            <div className="max-w-4xl mx-auto flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setCurrentQuestion((prev) => Math.max(0, prev - 1))
+                }
+                disabled={currentQuestion === 0}
+                className="flex items-center space-x-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Previous</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => handleMarkForReview(currentQ.id)}
+                className={`flex items-center space-x-2 ${
+                  markedForReview.has(currentQ.id)
+                    ? "bg-yellow-50 border-yellow-300 text-yellow-800"
+                    : ""
+                }`}
+              >
+                <Flag className="h-4 w-4" />
+                <span>
+                  {markedForReview.has(currentQ.id) ? "Unmark" : "Mark"}
+                </span>
+              </Button>
+
+              <Button
+                onClick={() =>
+                  setCurrentQuestion((prev) =>
+                    Math.min(questions.length - 1, prev + 1)
+                  )
+                }
+                disabled={currentQuestion === questions.length - 1}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
+              >
+                <span>Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
